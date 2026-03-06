@@ -8,7 +8,7 @@ Frontend React (Vite) untuk latihan soal dengan 3 mode utama:
 
 ## Upgrade terbaru
 
-- ✅ **100 soal per modul** untuk setiap mode (MCQ, Essai, Flashcard).
+- ✅ **200 soal per modul** untuk setiap mode (MCQ, Essai, Flashcard).
 - ✅ **UI/UX modern** dengan tampilan glassmorphism + gradient.
 - ✅ **Mobile responsive** (sidebar, statistik, toolbar, dan pagination adaptif).
 - ✅ **Fitur pembelajaran lengkap**:
