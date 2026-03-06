@@ -1,27 +1,36 @@
 # Web Soal Rutin Sobri
 
-Frontend React (tanpa Next.js) untuk latihan soal dengan mode:
+Frontend React (Vite) untuk latihan soal dengan 3 mode utama:
 
 - MCQ
 - Essai
 - Flashcard
 
-## Fitur
+## Upgrade terbaru
 
-- Sidebar ala admin panel untuk memilih modul:
-  - Matematika Simak UI
-  - Matematika LPDP
-  - Tes Potensi Akademik
-  - Soal Onkologi Radiasi
-  - Soal Toefl
-- Penyimpanan jawaban ke `localStorage`
-- Siap deploy di Vercel (SPA rewrite via `vercel.json`)
+- ✅ **100 soal per modul** untuk setiap mode (MCQ, Essai, Flashcard).
+- ✅ **UI/UX modern** dengan tampilan glassmorphism + gradient.
+- ✅ **Mobile responsive** (sidebar, statistik, toolbar, dan pagination adaptif).
+- ✅ **Fitur pembelajaran lengkap**:
+  - pencarian soal,
+  - progress tracker,
+  - statistik jawaban benar,
+  - pagination 10 soal per halaman,
+  - reset data per tipe,
+  - autosave ke `localStorage`.
 
 ## Menjalankan lokal
 
 ```bash
 npm install
 npm run dev
+```
+
+## Build produksi
+
+```bash
+npm run build
+npm run preview
 ```
 
 ## Deploy Vercel
