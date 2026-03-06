@@ -136,8 +136,10 @@ const initialState = {
   mcqAnswers: {},
   essayAnswers: {},
   flashcardFlips: {},
+  masteredFlashcards: {},
   query: '',
   page: 1,
+  mcqFilter: 'all',
 };
 
 function App() {
@@ -172,15 +174,27 @@ function App() {
     return list.filter((item) => {
       const sameModule = item.module === state.selectedModule;
       if (!sameModule) return false;
-      if (!normalizedQuery) return true;
 
       const searchable =
         state.selectedType === 'flashcards'
           ? `${item.front} ${item.back}`.toLowerCase()
           : item.prompt.toLowerCase();
-      return searchable.includes(normalizedQuery);
+      const matchesQuery = !normalizedQuery || searchable.includes(normalizedQuery);
+
+      if (state.selectedType !== 'mcq') {
+        return matchesQuery;
+      }
+
+      const selectedAnswer = state.mcqAnswers[item.id];
+      const matchesFilter =
+        state.mcqFilter === 'all' ||
+        (state.mcqFilter === 'unanswered' && !selectedAnswer) ||
+        (state.mcqFilter === 'correct' && selectedAnswer === item.answer) ||
+        (state.mcqFilter === 'wrong' && selectedAnswer && selectedAnswer !== item.answer);
+
+      return matchesQuery && matchesFilter;
     });
-  }, [state.selectedModule, state.selectedType, state.query]);
+  }, [state.selectedModule, state.selectedType, state.query, state.mcqAnswers, state.mcqFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
   const currentPage = Math.min(state.page, totalPages);
@@ -190,10 +204,26 @@ function App() {
     () => questionBank.mcq.filter((question) => question.module === state.selectedModule),
     [state.selectedModule],
   );
+  const moduleEssay = useMemo(
+    () => questionBank.essay.filter((question) => question.module === state.selectedModule),
+    [state.selectedModule],
+  );
+  const moduleFlashcards = useMemo(
+    () => questionBank.flashcards.filter((question) => question.module === state.selectedModule),
+    [state.selectedModule],
+  );
 
   const answeredCount = moduleMcq.filter((q) => state.mcqAnswers[q.id]).length;
   const correctCount = moduleMcq.filter((q) => state.mcqAnswers[q.id] === q.answer).length;
   const progressPercent = Math.round((answeredCount / moduleMcq.length) * 100);
+  const essayAnsweredCount = moduleEssay.filter((q) => (state.essayAnswers[q.id] || '').trim()).length;
+  const masteredFlashcardsCount = moduleFlashcards.filter((q) => state.masteredFlashcards[q.id]).length;
+
+  const jumpToRandomQuestion = () => {
+    if (!filteredItems.length) return;
+    const randomIndex = Math.floor(Math.random() * filteredItems.length);
+    updateState({ page: Math.floor(randomIndex / PAGE_SIZE) + 1 });
+  };
 
   const resetCurrentType = () => {
     if (state.selectedType === 'mcq') {
@@ -213,18 +243,22 @@ function App() {
     }
 
     const nextFlips = { ...state.flashcardFlips };
+    const nextMastered = { ...state.masteredFlashcards };
     questionBank.flashcards
       .filter((q) => q.module === state.selectedModule)
-      .forEach((q) => delete nextFlips[q.id]);
-    updateState({ flashcardFlips: nextFlips });
+      .forEach((q) => {
+        delete nextFlips[q.id];
+        delete nextMastered[q.id];
+      });
+    updateState({ flashcardFlips: nextFlips, masteredFlashcards: nextMastered });
   };
 
   const onChangeModule = (moduleName) => {
-    updateState({ selectedModule: moduleName, page: 1, query: '' });
+    updateState({ selectedModule: moduleName, page: 1, query: '', mcqFilter: 'all' });
   };
 
   const onChangeType = (type) => {
-    updateState({ selectedType: type, page: 1, query: '' });
+    updateState({ selectedType: type, page: 1, query: '', mcqFilter: 'all' });
   };
 
   return (
@@ -291,6 +325,24 @@ function App() {
               <span>Progress</span>
               <strong>{progressPercent}%</strong>
             </article>
+            <article className="stat-card">
+              <span>Essai Terisi</span>
+              <strong>{essayAnsweredCount}</strong>
+            </article>
+            <article className="stat-card">
+              <span>Flashcard Dikuasai</span>
+              <strong>{masteredFlashcardsCount}</strong>
+            </article>
+          </section>
+
+          <section className="card progress-panel">
+            <div>
+              <p>Progress modul aktif</p>
+              <strong>{progressPercent}%</strong>
+            </div>
+            <div className="progress-track" aria-hidden="true">
+              <div className="progress-fill" style={{ width: `${progressPercent}%` }} />
+            </div>
           </section>
 
           <section className="toolbar card">
@@ -299,6 +351,18 @@ function App() {
               onChange={(e) => updateState({ query: e.target.value, page: 1 })}
               placeholder="Cari soal, kata kunci, atau konsep..."
             />
+            {state.selectedType === 'mcq' ? (
+              <select
+                value={state.mcqFilter}
+                onChange={(e) => updateState({ mcqFilter: e.target.value, page: 1 })}
+              >
+                <option value="all">Semua</option>
+                <option value="unanswered">Belum dijawab</option>
+                <option value="correct">Jawaban benar</option>
+                <option value="wrong">Jawaban salah</option>
+              </select>
+            ) : null}
+            <button className="ghost" onClick={jumpToRandomQuestion}>Soal acak</button>
             <button className="ghost" onClick={resetCurrentType}>Reset data tipe ini</button>
           </section>
 
@@ -353,29 +417,47 @@ function App() {
                     })
                   }
                 />
+                <p className="subtle-info">
+                  Jumlah kata: {(state.essayAnswers[q.id] || '').trim().split(/\s+/).filter(Boolean).length}
+                </p>
               </section>
             ))}
 
           {state.selectedType === 'flashcards' &&
             pagedItems.map((card) => {
               const flipped = !!state.flashcardFlips[card.id];
+              const mastered = !!state.masteredFlashcards[card.id];
               return (
-                <button
-                  key={card.id}
-                  className={flipped ? 'flashcard flipped' : 'flashcard'}
-                  onClick={() =>
-                    updateState({
-                      flashcardFlips: {
-                        ...state.flashcardFlips,
-                        [card.id]: !flipped,
-                      },
-                    })
-                  }
-                >
-                  <small>{flipped ? 'Back' : 'Front'}</small>
-                  <p>{flipped ? card.back : card.front}</p>
-                  <span>Klik untuk membalik kartu</span>
-                </button>
+                <section key={card.id} className="card">
+                  <button
+                    className={flipped ? 'flashcard flipped' : 'flashcard'}
+                    onClick={() =>
+                      updateState({
+                        flashcardFlips: {
+                          ...state.flashcardFlips,
+                          [card.id]: !flipped,
+                        },
+                      })
+                    }
+                  >
+                    <small>{flipped ? 'Back' : 'Front'}</small>
+                    <p>{flipped ? card.back : card.front}</p>
+                    <span>Klik untuk membalik kartu</span>
+                  </button>
+                  <button
+                    className={mastered ? 'ghost mastered' : 'ghost'}
+                    onClick={() =>
+                      updateState({
+                        masteredFlashcards: {
+                          ...state.masteredFlashcards,
+                          [card.id]: !mastered,
+                        },
+                      })
+                    }
+                  >
+                    {mastered ? 'Sudah dikuasai ✅' : 'Tandai dikuasai'}
+                  </button>
+                </section>
               );
             })}
 
