@@ -9,7 +9,7 @@ const moduleConfigs = [
 ];
 
 const modules = moduleConfigs.map((module) => module.name);
-const QUESTION_COUNT_PER_MODULE = 100;
+const QUESTION_COUNT_PER_MODULE = 200;
 const PAGE_SIZE = 10;
 
 const shuffleDeterministic = (items, seed) => {
