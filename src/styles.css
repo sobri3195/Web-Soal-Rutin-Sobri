@@ -1,0 +1,166 @@
+:root {
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  color: #0f172a;
+  background: #f8fafc;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 290px 1fr;
+  min-height: 100vh;
+}
+
+.sidebar {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 24px;
+}
+
+.sidebar h1 {
+  margin: 0 0 8px;
+  font-size: 1.3rem;
+}
+
+.subtle {
+  margin: 0 0 18px;
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+.menu-group {
+  display: grid;
+  gap: 10px;
+}
+
+.menu-btn,
+.tab,
+.flashcard {
+  border: 0;
+  cursor: pointer;
+}
+
+.menu-btn {
+  text-align: left;
+  padding: 12px;
+  border-radius: 10px;
+  background: #1e293b;
+  color: #cbd5e1;
+}
+
+.menu-btn.active {
+  background: #2563eb;
+  color: #fff;
+}
+
+.content {
+  padding: 28px;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+header h2 {
+  margin: 0;
+}
+
+.tabs {
+  display: flex;
+  gap: 10px;
+}
+
+.tab {
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.tab.active {
+  background: #0f172a;
+  color: #fff;
+}
+
+.card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+  margin-bottom: 14px;
+}
+
+.empty {
+  color: #64748b;
+}
+
+.stack {
+  display: grid;
+  gap: 8px;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.option span {
+  color: #334155;
+}
+
+.ok {
+  color: #16a34a;
+}
+
+.wrong {
+  color: #dc2626;
+}
+
+textarea {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 12px;
+  font: inherit;
+}
+
+.flashcard {
+  width: 100%;
+  background: linear-gradient(120deg, #dbeafe, #e2e8f0);
+  text-align: left;
+  border-radius: 14px;
+  padding: 18px;
+  margin-bottom: 12px;
+}
+
+.flashcard.flipped {
+  background: linear-gradient(120deg, #dcfce7, #e2e8f0);
+}
+
+.flashcard p {
+  font-size: 1.1rem;
+  margin: 6px 0 10px;
+}
+
+.flashcard span,
+.flashcard small {
+  color: #475569;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
