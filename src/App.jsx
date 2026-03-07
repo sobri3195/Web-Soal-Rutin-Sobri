@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 const moduleConfigs = [
   { name: 'Matematika Simak UI', tag: 'Analitik Kuantitatif' },
@@ -903,7 +903,7 @@ const buildQuestionBank = () => {
 
 const questionBank = buildQuestionBank();
 
-const STORAGE_KEY = 'sobri-practice-state-v2';
+const STORAGE_KEY = 'sobri-practice-state-v3';
 
 const initialState = {
   selectedModule: modules[0],
@@ -922,6 +922,8 @@ const initialState = {
 
 function App() {
   const [state, setState] = useState(initialState);
+  const [toast, setToast] = useState('');
+  const importInputRef = useRef(null);
 
   useEffect(() => {
     const savedState = localStorage.getItem(STORAGE_KEY);
@@ -937,6 +939,16 @@ function App() {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [state]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', state.darkMode ? 'dark' : 'light');
+  }, [state.darkMode]);
+
+  useEffect(() => {
+    if (!toast) return undefined;
+    const timer = setTimeout(() => setToast(''), 2300);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   const updateState = (next) => setState((prev) => ({ ...prev, ...next }));
 
@@ -1014,6 +1026,17 @@ function App() {
     updateState({ page: Math.floor(randomIndex / PAGE_SIZE) + 1 });
   };
 
+  const jumpToFirstUnanswered = () => {
+    if (state.selectedType !== 'mcq') return;
+    const firstUnansweredIndex = moduleMcq.findIndex((q) => !state.mcqAnswers[q.id]);
+    if (firstUnansweredIndex === -1) {
+      setToast('Semua MCQ sudah terjawab. Mantap! 🎉');
+      return;
+    }
+    updateState({ mcqFilter: 'all', page: Math.floor(firstUnansweredIndex / PAGE_SIZE) + 1 });
+    setToast(`Lanjut ke soal MCQ #${firstUnansweredIndex + 1}`);
+  };
+
   const resetCurrentType = () => {
     if (state.selectedType === 'mcq') {
       const nextAnswers = { ...state.mcqAnswers };
@@ -1068,6 +1091,20 @@ function App() {
       module: state.selectedModule,
       type: state.selectedType,
       timestamp: new Date().toISOString(),
+      stateSnapshot: {
+        selectedModule: state.selectedModule,
+        selectedType: state.selectedType,
+        mcqAnswers: state.mcqAnswers,
+        mcqShowExplanation: state.mcqShowExplanation,
+        essayAnswers: state.essayAnswers,
+        flashcardFlips: state.flashcardFlips,
+        masteredFlashcards: state.masteredFlashcards,
+        query: '',
+        page: 1,
+        mcqFilter: 'all',
+        showMasteredFlashcards: state.showMasteredFlashcards,
+        darkMode: state.darkMode,
+      },
       stats: {
         mcqAnswered: answeredCount,
         mcqCorrect: correctCount,
@@ -1085,6 +1122,54 @@ function App() {
     a.download = `progress-${state.selectedModule}-${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
+    setToast('Progress berhasil di-export.');
+  };
+
+  const triggerImportProgress = () => {
+    if (importInputRef.current) {
+      importInputRef.current.value = '';
+      importInputRef.current.click();
+    }
+  };
+
+  const importProgress = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      if (!parsed.stateSnapshot) {
+        throw new Error('Invalid file format');
+      }
+
+      const allowedKeys = [
+        'selectedModule',
+        'selectedType',
+        'mcqAnswers',
+        'mcqShowExplanation',
+        'essayAnswers',
+        'flashcardFlips',
+        'masteredFlashcards',
+        'query',
+        'page',
+        'mcqFilter',
+        'showMasteredFlashcards',
+        'darkMode',
+      ];
+
+      const safeData = { ...initialState };
+      allowedKeys.forEach((key) => {
+        if (key in parsed.stateSnapshot) {
+          safeData[key] = parsed.stateSnapshot[key];
+        }
+      });
+
+      setState((prev) => ({ ...prev, ...safeData }));
+      setToast('Progress berhasil di-import.');
+    } catch {
+      setToast('File import tidak valid. Gunakan file hasil export aplikasi.');
+    }
   };
 
   return (
@@ -1108,8 +1193,21 @@ function App() {
             ))}
           </div>
           <div className="sidebar-footer">
+            <input
+              ref={importInputRef}
+              type="file"
+              accept="application/json"
+              onChange={importProgress}
+              style={{ display: 'none' }}
+            />
+            <button className="ghost" onClick={() => updateState({ darkMode: !state.darkMode })}>
+              {state.darkMode ? '☀️ Light mode' : '🌙 Dark mode'}
+            </button>
             <button className="ghost" onClick={exportProgress}>
               📊 Export Progress
+            </button>
+            <button className="ghost" onClick={triggerImportProgress}>
+              📥 Import Progress
             </button>
           </div>
         </aside>
@@ -1203,8 +1301,13 @@ function App() {
               </label>
             ) : null}
             <button className="ghost" onClick={jumpToRandomQuestion}>🎲 Soal acak</button>
+            {state.selectedType === 'mcq' && (
+              <button className="ghost" onClick={jumpToFirstUnanswered}>➡️ Lanjut soal belum dijawab</button>
+            )}
             <button className="ghost danger" onClick={resetCurrentType}>🗑️ Reset data</button>
           </section>
+
+          {toast ? <div className="card toast">{toast}</div> : null}
 
           {displayItems.length === 0 ? (
             <div className="card empty">
