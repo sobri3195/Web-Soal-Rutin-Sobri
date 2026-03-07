@@ -12,6 +12,17 @@ const modules = moduleConfigs.map((module) => module.name);
 const QUESTION_COUNT_PER_MODULE = 200;
 const PAGE_SIZE = 10;
 
+// Hash function untuk generate seed unik per modul
+const hashString = (str) => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash);
+};
+
 const shuffleDeterministic = (items, seed) => {
   const next = [...items];
   for (let i = next.length - 1; i > 0; i -= 1) {
@@ -21,64 +32,103 @@ const shuffleDeterministic = (items, seed) => {
   return next;
 };
 
-const createMcqQuestion = (moduleName, index) => {
+// ===== SOAL MATEMATIKA SIMAK UI =====
+const createSimakMathQuestion = (moduleName, index) => {
   const n = index + 1;
+  const baseSeed = hashString(moduleName) + n * 997;
+  
   const variants = [
     () => {
-      const a = (n % 9) + 2;
-      const b = (n % 5) + 3;
-      const result = a * b;
+      const a = ((baseSeed * 3) % 20) + 5;
+      const b = ((baseSeed * 7) % 15) + 3;
+      const c = ((baseSeed * 11) % 10) + 2;
+      const result = a * b + c;
       const answer = String(result);
       return {
-        prompt: `[${moduleName}] Hitung nilai ${a} × ${b}.`,
+        prompt: `Diketahui f(x) = ${a}x + ${b}. Jika f(${c}) = y, berapakah nilai 2y + ${b}?`,
         answer,
+        explanation: `f(${c}) = ${a}(${c}) + ${b} = ${a * c} + ${b} = ${a * c + b}. Maka 2y + ${b} = 2(${a * c + b}) + ${b} = ${result}.`,
         options: shuffleDeterministic(
-          [answer, String(result + 2), String(result - 1), String(result + 5)],
-          n,
+          [answer, String(result + 5), String(result - 3), String(result + 10)],
+          baseSeed,
         ),
       };
     },
     () => {
-      const base = (n % 11) + 10;
-      const delta = (n % 4) + 6;
-      const answer = String(base + delta);
+      const p = ((baseSeed * 5) % 50) + 100;
+      const r = ((baseSeed * 3) % 5) + 5;
+      const t = ((baseSeed * 7) % 3) + 2;
+      const result = Math.round((p * r * t) / 100);
+      const answer = String(result);
       return {
-        prompt: `[${moduleName}] Jika skor awal ${base} lalu meningkat ${delta}, skor akhir adalah...`,
+        prompt: `Sebuah tabungan sebesar Rp ${p}.000 dengan bunga ${r}% per tahun. Berapa bunga setelah ${t} tahun? (dalam ribuan)`,
         answer,
+        explanation: `Bunga = (P × R × T) / 100 = (${p} × ${r} × ${t}) / 100 = ${result}`,
         options: shuffleDeterministic(
-          [answer, String(base - delta), String(base + delta + 3), String(base + 1)],
-          n,
+          [answer, String(result + 10), String(result - 5), String(result + 20)],
+          baseSeed,
         ),
       };
     },
     () => {
-      const words = ['akurasi', 'konsisten', 'objektif', 'efektif'];
-      const correct = words[n % words.length];
+      const a = ((baseSeed * 13) % 8) + 2;
+      const b = ((baseSeed * 17) % 5) + 1;
+      const result = Math.pow(a, b) + a * b;
+      const answer = String(result);
       return {
-        prompt: `[${moduleName}] Pilih kata yang paling tepat untuk melengkapi kalimat: "Latihan rutin membuat hasil belajar lebih ____".`,
-        answer: correct,
-        options: shuffleDeterministic([correct, 'kabur', 'acak', 'labil'], n),
-      };
-    },
-    () => {
-      const k = (n % 8) + 2;
-      const answer = String(k * k);
-      return {
-        prompt: `[${moduleName}] Nilai kuadrat dari ${k} adalah...`,
+        prompt: `Jika a = ${a} dan b = ${b}, berapakah nilai a^b + ab?`,
         answer,
+        explanation: `a^b = ${Math.pow(a, b)}, ab = ${a * b}. Total = ${Math.pow(a, b)} + ${a * b} = ${result}`,
         options: shuffleDeterministic(
-          [answer, String(k * 2), String(k + 5), String(k * k + 2)],
-          n,
+          [answer, String(result + a), String(result - b), String(result + a + b)],
+          baseSeed,
         ),
       };
     },
     () => {
-      const verbs = ['analyze', 'improve', 'review', 'compare'];
-      const answer = `${verbs[n % verbs.length]}s`;
+      const total = ((baseSeed * 19) % 50) + 150;
+      const percent = ((baseSeed * 23) % 20) + 10;
+      const result = Math.round(total * percent / 100);
+      const answer = String(result);
       return {
-        prompt: `[${moduleName}] Choose the correct verb form: "She ___ the concept every night."`,
+        prompt: `Dari ${total} siswa, ${percent}% mengikuti les matematika. Berapa banyak siswa yang les?`,
         answer,
-        options: shuffleDeterministic([answer, verbs[n % verbs.length], 'is improve', 'have reviewed'], n),
+        explanation: `${percent}% dari ${total} = ${total} × ${percent}/100 = ${result}`,
+        options: shuffleDeterministic(
+          [answer, String(result + 5), String(result - 5), String(Math.round(total * (percent + 5) / 100))],
+          baseSeed,
+        ),
+      };
+    },
+    () => {
+      const speed = ((baseSeed * 29) % 40) + 40;
+      const time = ((baseSeed * 31) % 3) + 2;
+      const distance = speed * time;
+      const answer = String(distance);
+      return {
+        prompt: `Sebuah mobil bergerak dengan kecepatan ${speed} km/jam selama ${time} jam. Berapa jarak yang ditempuh?`,
+        answer,
+        explanation: `Jarak = Kecepatan × Waktu = ${speed} × ${time} = ${distance} km`,
+        options: shuffleDeterministic(
+          [answer, String(distance + speed), String(distance - time), String(distance + 20)],
+          baseSeed,
+        ),
+      };
+    },
+    () => {
+      const a = ((baseSeed * 37) % 10) + 1;
+      const b = ((baseSeed * 41) % 10) + 5;
+      const discriminant = b * b - 4 * a * 2;
+      const result = discriminant > 0 ? 2 : (discriminant === 0 ? 1 : 0);
+      const answer = String(result);
+      const options = result === 2 ? ['2', '1', '0', 'Tidak terdefinisi'] : 
+                     result === 1 ? ['1', '2', '0', 'Tak terhingga'] :
+                     ['0', '1', '2', 'Tak terhingga'];
+      return {
+        prompt: `Berapa banyak akar real dari persamaan ${a}x² + ${b}x + 2 = 0?`,
+        answer,
+        explanation: `Diskriminan D = b² - 4ac = ${b}² - 4(${a})(2) = ${discriminant}. D ${discriminant > 0 ? '> 0' : discriminant === 0 ? '= 0' : '< 0'} sehingga ada ${result} akar real.`,
+        options: shuffleDeterministic(options, baseSeed),
       };
     },
   ];
@@ -91,22 +141,747 @@ const createMcqQuestion = (moduleName, index) => {
   };
 };
 
+// ===== SOAL MATEMATIKA LPDP =====
+const createLpdpMathQuestion = (moduleName, index) => {
+  const n = index + 1;
+  const baseSeed = hashString(moduleName) + n * 997;
+  
+  const variants = [
+    () => {
+      const present = ((baseSeed * 3) % 200) + 300;
+      const absent = ((baseSeed * 5) % 50) + 20;
+      const total = present + absent;
+      const result = Math.round((absent / total) * 100 * 10) / 10;
+      const answer = String(result) + '%';
+      return {
+        prompt: `Dari ${total} peserta tes, ${present} hadir. Berapa persen tingkat ketidakhadiran?`,
+        answer,
+        explanation: `Tidak hadir = ${absent}. Persentase = (${absent}/${total}) × 100 = ${result}%`,
+        options: shuffleDeterministic(
+          [answer, String(Math.round((present/total)*100)) + '%', String(result + 2) + '%', String(result - 2) + '%'],
+          baseSeed,
+        ),
+      };
+    },
+    () => {
+      const salary = ((baseSeed * 7) % 3000) + 5000;
+      const increase = ((baseSeed * 11) % 15) + 5;
+      const newSalary = Math.round(salary * (1 + increase/100));
+      const answer = 'Rp ' + newSalary.toLocaleString('id-ID');
+      return {
+        prompt: `Gaji awal Rp ${salary.toLocaleString('id-ID')}. Naik ${increase}%. Berapa gaji baru?`,
+        answer,
+        explanation: `Gaji baru = ${salary} × (1 + ${increase}/100) = ${salary} × ${1 + increase/100} = ${newSalary}`,
+        options: shuffleDeterministic(
+          [answer, 'Rp ' + (newSalary + 500).toLocaleString('id-ID'), 'Rp ' + (newSalary - 500).toLocaleString('id-ID'), 'Rp ' + Math.round(salary * 1.1).toLocaleString('id-ID')],
+          baseSeed,
+        ),
+      };
+    },
+    () => {
+      const ratioA = ((baseSeed * 13) % 4) + 2;
+      const ratioB = ((baseSeed * 17) % 3) + 2;
+      const totalParts = ratioA + ratioB;
+      const amount = ((baseSeed * 19) % 50) + 100;
+      const totalAmount = amount * totalParts;
+      const shareA = amount * ratioA;
+      const answer = 'Rp ' + shareA.toLocaleString('id-ID');
+      return {
+        prompt: `Uang Rp ${totalAmount.toLocaleString('id-ID')} dibagi dengan perbandingan ${ratioA}:${ratioB}. Berapa bagian yang lebih besar?`,
+        answer,
+        explanation: `Total bagian = ${ratioA} + ${ratioB} = ${totalParts}. Bagian besar = ${totalAmount} × ${ratioA}/${totalParts} = ${shareA}`,
+        options: shuffleDeterministic(
+          [answer, 'Rp ' + (amount * ratioB).toLocaleString('id-ID'), 'Rp ' + (shareA + 1000).toLocaleString('id-ID'), 'Rp ' + (totalAmount / 2).toLocaleString('id-ID')],
+          baseSeed,
+        ),
+      };
+    },
+    () => {
+      const price = ((baseSeed * 23) % 20000) + 50000;
+      const discount = ((baseSeed * 29) % 20) + 10;
+      const finalPrice = Math.round(price * (1 - discount/100));
+      const answer = 'Rp ' + finalPrice.toLocaleString('id-ID');
+      return {
+        prompt: `Harga barang Rp ${price.toLocaleString('id-ID')} didiskon ${discount}%. Berapa harga setelah diskon?`,
+        answer,
+        explanation: `Diskon = ${price} × ${discount}% = ${Math.round(price * discount/100)}. Harga akhir = ${price} - ${Math.round(price * discount/100)} = ${finalPrice}`,
+        options: shuffleDeterministic(
+          [answer, 'Rp ' + (finalPrice + 5000).toLocaleString('id-ID'), 'Rp ' + (price - discount * 1000).toLocaleString('id-ID'), 'Rp ' + Math.round(price * 0.8).toLocaleString('id-ID')],
+          baseSeed,
+        ),
+      };
+    },
+    () => {
+      const principal = ((baseSeed * 31) % 5000) + 10000;
+      const rate = ((baseSeed * 37) % 5) + 5;
+      const years = ((baseSeed * 41) % 3) + 2;
+      const interest = Math.round(principal * rate * years / 100);
+      const answer = 'Rp ' + interest.toLocaleString('id-ID');
+      return {
+        prompt: `Tabungan Rp ${principal.toLocaleString('id-ID')} dengan bunga tunggal ${rate}% per tahun. Berapa bunga setelah ${years} tahun?`,
+        answer,
+        explanation: `Bunga = P × R × T / 100 = ${principal} × ${rate} × ${years} / 100 = ${interest}`,
+        options: shuffleDeterministic(
+          [answer, 'Rp ' + (interest + 1000).toLocaleString('id-ID'), 'Rp ' + Math.round(principal * Math.pow(1 + rate/100, years) - principal).toLocaleString('id-ID'), 'Rp ' + (interest * 2).toLocaleString('id-ID')],
+          baseSeed,
+        ),
+      };
+    },
+    () => {
+      const workers = ((baseSeed * 43) % 10) + 5;
+      const days = ((baseSeed * 47) % 15) + 10;
+      const newWorkers = workers + ((baseSeed * 53) % 5) + 2;
+      const newDays = Math.round((workers * days) / newWorkers);
+      const answer = String(newDays) + ' hari';
+      return {
+        prompt: `${workers} pekerja menyelesaikan proyek dalam ${days} hari. Berapa hari jika menggunakan ${newWorkers} pekerja?`,
+        answer,
+        explanation: `Ini perbandingan berbalik nilai. ${workers} × ${days} = ${newWorkers} × x. x = ${workers * days}/${newWorkers} = ${newDays} hari`,
+        options: shuffleDeterministic(
+          [answer, String(newDays + 3) + ' hari', String(newDays - 2) + ' hari', String(Math.round(days * newWorkers / workers)) + ' hari'],
+          baseSeed,
+        ),
+      };
+    },
+  ];
+
+  const question = variants[index % variants.length]();
+  return {
+    id: `mcq-${moduleName}-${n}`,
+    module: moduleName,
+    ...question,
+  };
+};
+
+// ===== SOAL TES POTENSI AKADEMIK (TPA) =====
+const createTpaQuestion = (moduleName, index) => {
+  const n = index + 1;
+  const baseSeed = hashString(moduleName) + n * 997;
+  
+  const analogies = [
+    { pair1: ['Dokter', 'Rumah Sakit'], pair2: ['Guru', 'Sekolah'], relation: 'tempat kerja' },
+    { pair1: ['Pesawat', 'Pilot'], pair2: ['Kereta', 'Masinis'], relation: 'kendaraan dan pengemudi' },
+    { pair1: ['Kucing', 'Meong'], pair2: ['Anjing', 'Guk'], relation: 'hewan dan suara' },
+    { pair1: ['Padi', 'Nasi'], pair2: ['Gandum', 'Roti'], relation: 'bahan baku dan hasil' },
+    { pair1: ['Api', 'Panas'], pair2: ['Es', 'Dingin'], relation: 'sifat' },
+    { pair1: ['Mata', 'Melihat'], pair2: ['Telinga', 'Mendengar'], relation: 'indra dan fungsi' },
+    { pair1: ['Buku', 'Halaman'], pair2: ['Rumah', 'Ruangan'], relation: 'keseluruhan dan bagian' },
+    { pair1: ['Marah', 'Merah'], pair2: ['Iri', 'Hijau'], relation: 'emosi dan warna' },
+  ];
+  
+  const synonyms = [
+    { word: 'Efisien', correct: 'Efektif', wrong: ['Lambat', 'Boros', 'Ribet'] },
+    { word: 'Kontradiksi', correct: 'Pertentangan', wrong: ['Kesepakatan', 'Harmoni', 'Persamaan'] },
+    { word: 'Relevan', correct: 'Sesuai', wrong: ['Tidak penting', 'Usang', 'Asing'] },
+    { word: 'Elaborasi', correct: 'Penjelasan rinci', wrong: ['Ringkasan', 'Penolakan', 'Penyederhanaan'] },
+    { word: 'Premis', correct: 'Dasar pikiran', wrong: ['Kesimpulan', 'Hasil', 'Akibat'] },
+    { word: 'Valid', correct: 'Sahih', wrong: ['Salah', 'Palsu', 'Ditolak'] },
+  ];
+  
+  const antonyms = [
+    { word: 'Optimis', correct: 'Pesimis', wrong: ['Senang', 'Semangat', 'Bahagia'] },
+    { word: 'Fleksibel', correct: 'Kaku', wrong: ['Lentur', 'Elastis', 'Adaptif'] },
+    { word: 'Konkret', correct: 'Abstrak', wrong: ['Nyata', 'Jelas', 'Terlihat'] },
+    { word: 'Progresif', correct: 'Regresif', wrong: ['Maju', 'Berkembang', 'Positif'] },
+    { word: 'Platonic', correct: 'Sensual', wrong: ['Spiritual', 'Murni', 'Suci'] },
+  ];
+
+  const variants = [
+    () => {
+      const analogy = analogies[baseSeed % analogies.length];
+      const answer = analogy.pair2[1];
+      return {
+        prompt: `${analogy.pair1[0]} : ${analogy.pair1[1]} = ${analogy.pair2[0]} : ?`,
+        answer,
+        explanation: `Hubungan: ${analogy.relation}. ${analogy.pair1[0]} ada di ${analogy.pair1[1]}, maka ${analogy.pair2[0]} ada di ${answer}.`,
+        options: shuffleDeterministic([answer, analogy.pair1[0], analogy.pair2[0], 'Tidak ada hubungan'], baseSeed),
+      };
+    },
+    () => {
+      const syn = synonyms[baseSeed % synonyms.length];
+      return {
+        prompt: `Sinonim (persamaan kata) dari "${syn.word}" adalah...`,
+        answer: syn.correct,
+        explanation: `"${syn.word}" memiliki arti yang sama dengan "${syn.correct}"`,
+        options: shuffleDeterministic([syn.correct, ...syn.wrong.slice(0, 3)], baseSeed),
+      };
+    },
+    () => {
+      const ant = antonyms[baseSeed % antonyms.length];
+      return {
+        prompt: `Antonim (lawan kata) dari "${ant.word}" adalah...`,
+        answer: ant.correct,
+        explanation: `"${ant.word}" adalah lawan dari "${ant.correct}"`,
+        options: shuffleDeterministic([ant.correct, ...ant.wrong.slice(0, 3)], baseSeed),
+      };
+    },
+    () => {
+      const patterns = [
+        { seq: '2, 4, 8, 16, ...', next: '32', rule: 'dikalikan 2' },
+        { seq: '1, 1, 2, 3, 5, ...', next: '8', rule: 'Fibonacci (jumlah 2 angka sebelumnya)' },
+        { seq: '3, 6, 9, 12, ...', next: '15', rule: 'ditambah 3' },
+        { seq: '100, 90, 80, 70, ...', next: '60', rule: 'dikurangi 10' },
+        { seq: '1, 4, 9, 16, ...', next: '25', rule: 'kuadrat (1², 2², 3², ...)' },
+      ];
+      const pattern = patterns[baseSeed % patterns.length];
+      return {
+        prompt: `Lanjutkan pola: ${pattern.seq}`,
+        answer: pattern.next,
+        explanation: `Pola: ${pattern.rule}`,
+        options: shuffleDeterministic([pattern.next, String(parseInt(pattern.next) + 2), String(parseInt(pattern.next) - 2), String(parseInt(pattern.next) * 2)], baseSeed),
+      };
+    },
+    () => {
+      const shapes = ['Segitiga', 'Persegi', 'Lingkaran', 'Kubus'];
+      const different = 'Kubus';
+      return {
+        prompt: `Manakah yang berbeda dari kelompoknya?`,
+        answer: different,
+        explanation: `${different} adalah bangun ruang 3D, sedangkan yang lain adalah bangun datar 2D.`,
+        options: shuffleDeterministic(shapes, baseSeed),
+      };
+    },
+    () => {
+      const syllogisms = [
+        { 
+          premise1: 'Semua mahasiswa pintar', 
+          premise2: 'Budi adalah mahasiswa', 
+          conclusion: 'Budi pintar',
+          distractors: ['Budi bukan mahasiswa', 'Semua yang pintar adalah mahasiswa', 'Tidak dapat disimpulkan']
+        },
+        {
+          premise1: 'Semua burung bisa terbang',
+          premise2: 'Penguin adalah burung',
+          conclusion: 'Penguin bisa terbang',
+          distractors: ['Penguin bukan burung', 'Semua yang terbang adalah burung', 'Tidak ada kesimpulan']
+        },
+      ];
+      const syl = syllogisms[baseSeed % syllogisms.length];
+      return {
+        prompt: `${syl.premise1}. ${syl.premise2}. Kesimpulan:`,
+        answer: syl.conclusion,
+        explanation: `Dari premis yang diberikan, kesimpulan logis adalah "${syl.conclusion}"`,
+        options: shuffleDeterministic([syl.conclusion, ...syl.distractors], baseSeed),
+      };
+    },
+  ];
+
+  const question = variants[index % variants.length]();
+  return {
+    id: `mcq-${moduleName}-${n}`,
+    module: moduleName,
+    ...question,
+  };
+};
+
+// ===== SOAL ONKOLOGI RADIASI =====
+const createOncologyQuestion = (moduleName, index) => {
+  const n = index + 1;
+  const baseSeed = hashString(moduleName) + n * 997;
+  
+  const questions = [
+    {
+      prompt: 'Radiasi ionisasi yang paling sering digunakan dalam radioterapi kanker adalah...',
+      answer: 'Sinar-X dan sinar gamma',
+      explanation: 'Radioterapi menggunakan sinar-X berenergi tinggi atau sinar gamma dari Co-60 untuk membunuh sel kanker.',
+      options: ['Sinar-X dan sinar gamma', 'Sinar ultraviolet', 'Radiasi inframerah', 'Gelombang radio'],
+    },
+    {
+      prompt: 'Unit SI untuk dosis radiasi yang diserap jaringan adalah...',
+      answer: 'Gray (Gy)',
+      explanation: 'Gray (Gy) adalah unit SI untuk dosis serap, didefinisikan sebagai 1 joule energi per kilogram jaringan.',
+      options: ['Gray (Gy)', 'Sievert (Sv)', 'Becquerel (Bq)', 'Curie (Ci)'],
+    },
+    {
+      prompt: 'Efek samping akut radioterapi pada kulit yang paling umum adalah...',
+      answer: 'Dermatitis radiasi',
+      explanation: 'Dermatitis radiasi adalah peradangan kulit akibat radiasi, mirip dengan sunburn, yang terjadi selama atau segera setelah terapi.',
+      options: ['Dermatitis radiasi', 'Kanker kulit', 'Vitiligo', 'Psoriasis'],
+    },
+    {
+      prompt: 'Fraksionasi dalam radioterapi bertujuan untuk...',
+      answer: 'Memaksimalkan kerusakan tumor sambil melindungi jaringan normal',
+      explanation: 'Fraksionasi (pemberian dosis dalam beberapa sesi) memanfaatkan perbedaan kemampuan regenerasi sel normal vs sel kanker.',
+      options: ['Memaksimalkan kerusakan tumor sambil melindungi jaringan normal', 'Mengurangi biaya pengobatan', 'Mempercepat waktu pengobatan', 'Menghindari efek samping sama sekali'],
+    },
+    {
+      prompt: 'Organ yang paling sensitif terhadap radiasi adalah...',
+      answer: 'Sumsum tulang dan usus',
+      explanation: 'Jaringan yang memiliki tingkat proliferasi tinggi seperti sumsum tulang dan epitel usus sangat sensitif terhadap radiasi.',
+      options: ['Sumsum tulang dan usus', 'Tulang', 'Otot', 'Tendon'],
+    },
+    {
+      prompt: 'Brachytherapy adalah teknik radioterapi yang...',
+      answer: 'Menempatkan sumber radiasi di dalam atau dekat tumor',
+      explanation: 'Brachytherapy menggunakan sumber radioaktif yang ditempatkan secara internal untuk memberikan dosis tinggi ke target spesifik.',
+      options: ['Menempatkan sumber radiasi di dalam atau dekat tumor', 'Menggunakan radiasi dari luar tubuh', 'Menggunakan partikel alpha', 'Menggunakan gelombang suara'],
+    },
+    {
+      prompt: 'Dosis lethal 50/30 (LD50/30) mengacu pada...',
+      answer: 'Dosis radiasi yang mematikan 50% populasi dalam 30 hari',
+      explanation: 'LD50/30 adalah dosis total radiasi whole-body yang diperkirakan akan menyebabkan kematian pada 50% individu dalam 30 hari.',
+      options: ['Dosis radiasi yang mematikan 50% populasi dalam 30 hari', 'Dosis harian maksimum yang aman', 'Dosis untuk menyembuhkan 50% kanker', 'Dosis untuk terapi selama 30 hari'],
+    },
+    {
+      prompt: 'Linear Energy Transfer (LET) yang tinggi lebih efektif membunuh sel kanker karena...',
+      answer: 'Kerusakan DNA yang lebih terkonsentrasi dan sulit diperbaiki',
+      explanation: 'Radiasi LET tinggi (seperti partikel alpha) menyebabkan kerusakan DNA yang padat dan kompleks, sulit diperbaiki oleh mekanisme repair sel.',
+      options: ['Kerusakan DNA yang lebih terkonsentrasi dan sulit diperbaiki', 'Dapat menembus lebih dalam', 'Tidak memiliki efek samping', 'Lebih murah dalam pengobatan'],
+    },
+    {
+      prompt: 'Efek bystander dalam radioterapi merujuk pada...',
+      answer: 'Sel yang tidak teriradiasi mengalami kerusakan akibat sinyal dari sel yang teriradiasi',
+      explanation: 'Efek bystander adalah fenomena di mana sel yang tidak langsung terkena radiasi mengalami efek biologis akibat sinyal dari sel tetangga yang teriradiasi.',
+      options: ['Sel yang tidak teriradiasi mengalami kerusakan akibat sinyal dari sel yang teriradiasi', 'Dokter yang terpapar radiasi', 'Pasien di ruang tunggu', 'Efek pada generasi mendatang'],
+    },
+    {
+      prompt: 'Tumor hypoxic (kekurangan oksigen) lebih resisten terhadap radiasi karena...',
+      answer: 'Oksigen diperlukan untuk memperkuat efek radiasi pada DNA',
+      explanation: 'Efek oksigen (oxygen effect): oksigen diperlukan untuk memperkuat dan mempertahankan kerusakan DNA yang disebabkan oleh radikal bebas dari radiasi.',
+      options: ['Oksigen diperlukan untuk memperkuat efek radiasi pada DNA', 'Tumor hipoksik lebih besar', 'Tumor hipoksik bergerak lebih cepat', 'Oksigen melindungi sel kanker'],
+    },
+    {
+      prompt: 'CT Simulator dalam radioterapi digunakan untuk...',
+      answer: 'Perencanaan dosis dan visualisasi target 3D',
+      explanation: 'CT Simulator memungkinkan visualisasi 3D tumor dan organ at-risk, serta perencanaan dosis yang presisi sebelum terapi.',
+      options: ['Perencanaan dosis dan visualisasi target 3D', 'Mendiagnosis kanker saja', 'Mengobati kanker', 'Menghasilkan radiasi'],
+    },
+    {
+      prompt: 'Radiosensitizer adalah zat yang...',
+      answer: 'Meningkatkan sensitivitas sel kanker terhadap radiasi',
+      explanation: 'Radiosensitizer adalah agen kimia yang membuat sel kanker lebih sensitif terhadap efek radiasi, meningkatkan efektivitas terapi.',
+      options: ['Meningkatkan sensitivitas sel kanker terhadap radiasi', 'Melindungi jaringan normal', 'Mengurangi efek radiasi', 'Menyebabkan radiasi'],
+    },
+  ];
+
+  const q = questions[index % questions.length];
+  return {
+    id: `mcq-${moduleName}-${n}`,
+    module: moduleName,
+    prompt: q.prompt,
+    answer: q.answer,
+    explanation: q.explanation,
+    options: shuffleDeterministic(q.options, baseSeed),
+  };
+};
+
+// ===== SOAL TOEFL =====
+const createToeflQuestion = (moduleName, index) => {
+  const n = index + 1;
+  const baseSeed = hashString(moduleName) + n * 997;
+  
+  const grammarQuestions = [
+    {
+      prompt: 'She ___ to the office every day.',
+      answer: 'goes',
+      explanation: 'Subject "She" memerlukan verb bentuk ketiga tunggal (goes) untuk present simple tense.',
+      options: ['goes', 'going', 'gone', 'go'],
+    },
+    {
+      prompt: 'By the time we arrived, the movie ___.',
+      answer: 'had already started',
+      explanation: 'Past perfect tense (had + V3) digunakan untuk aksi yang selesai sebelum aksi lain di masa lampau.',
+      options: ['had already started', 'has already started', 'already started', 'was already starting'],
+    },
+    {
+      prompt: 'If I ___ rich, I would travel the world.',
+      answer: 'were',
+      explanation: 'Conditional type 2 (unreal present) menggunakan "were" untuk semua subject setelah "if".',
+      options: ['were', 'am', 'was', 'be'],
+    },
+    {
+      prompt: 'The book ___ on the table belongs to my sister.',
+      answer: 'lying',
+      explanation: '"Lying" (present participle) digunakan sebagai adjective untuk menggambarkan posisi buku.',
+      options: ['lying', 'laying', 'laid', 'lied'],
+    },
+    {
+      prompt: 'Neither the teacher nor the students ___ the answer.',
+      answer: 'know',
+      explanation: 'Dengan "neither...nor", verb disesuaikan dengan subject terdekat (students = plural).',
+      options: ['know', 'knows', 'known', 'knowing'],
+    },
+    {
+      prompt: 'I look forward ___ from you soon.',
+      answer: 'to hearing',
+      explanation: '"Look forward to" diikuti oleh gerund (V-ing), bukan infinitive.',
+      options: ['to hearing', 'to hear', 'hearing', 'for hearing'],
+    },
+    {
+      prompt: 'The meeting will be held ___ Monday morning.',
+      answer: 'on',
+      explanation: 'Preposisi "on" digunakan untuk hari spesifik dan bagian hari tertentu.',
+      options: ['on', 'in', 'at', 'by'],
+    },
+    {
+      prompt: '___ of the students passed the exam.',
+      answer: 'All',
+      explanation: '"All" digunakan dengan plural noun dan plural verb untuk menyatakan seluruh kelompok.',
+      options: ['All', 'Each', 'Every', 'Much'],
+    },
+    {
+      prompt: 'This is the ___ book I have ever read.',
+      answer: 'most interesting',
+      explanation: 'Superlative degree untuk adjective panjang menggunakan "most" + adjective.',
+      options: ['most interesting', 'more interesting', 'interestinger', 'interestingly'],
+    },
+    {
+      prompt: 'The project ___ by next month.',
+      answer: 'will have been completed',
+      explanation: 'Future perfect passive tense digunakan untuk aksi pasif yang akan selesai pada waktu tertentu di masa depan.',
+      options: ['will have been completed', 'will be completed', 'is completed', 'has been completed'],
+    },
+    {
+      prompt: 'She insisted that he ___ the job.',
+      answer: 'take',
+      explanation: 'Setelah "insist", "suggest", "recommend", verb menggunakan base form (subjunctive mood).',
+      options: ['take', 'takes', 'took', 'taken'],
+    },
+    {
+      prompt: '___ the rain, we went for a walk.',
+      answer: 'Despite',
+      explanation: '"Despite" diikuti oleh noun/gerund untuk menunjukkan kontras, tidak diikuti clause lengkap.',
+      options: ['Despite', 'Although', 'Because', 'Since'],
+    },
+  ];
+
+  const vocabQuestions = [
+    {
+      word: 'Aberration',
+      correct: 'Deviation from the norm',
+      wrong: ['Agreement', 'Conformity', 'Regularity'],
+    },
+    {
+      word: 'Benevolent',
+      correct: 'Kind and generous',
+      wrong: ['Cruel', 'Selfish', 'Malicious'],
+    },
+    {
+      word: 'Candid',
+      correct: 'Honest and straightforward',
+      wrong: ['Deceitful', 'Evasive', 'Dishonest'],
+    },
+    {
+      word: 'Diligent',
+      correct: 'Hardworking and careful',
+      wrong: ['Lazy', 'Careless', 'Negligent'],
+    },
+    {
+      word: 'Eloquent',
+      correct: 'Fluent and persuasive in speech',
+      wrong: ['Inarticulate', 'Tongue-tied', 'Mute'],
+    },
+    {
+      word: 'Fragile',
+      correct: 'Easily broken or damaged',
+      wrong: ['Strong', 'Durable', 'Sturdy'],
+    },
+    {
+      word: 'Grave',
+      correct: 'Serious and solemn',
+      wrong: ['Trivial', 'Cheerful', 'Light'],
+    },
+    {
+      word: 'Hostile',
+      correct: 'Unfriendly and antagonistic',
+      wrong: ['Friendly', 'Hospitable', 'Amicable'],
+    },
+    {
+      word: 'Inevitable',
+      correct: 'Unavoidable and certain to happen',
+      wrong: ['Preventable', 'Uncertain', 'Avoidable'],
+    },
+    {
+      word: 'Jubilant',
+      correct: 'Extremely joyful and triumphant',
+      wrong: ['Depressed', 'Dejected', 'Sorrowful'],
+    },
+    {
+      word: 'Keen',
+      correct: 'Eager and enthusiastic',
+      wrong: ['Indifferent', 'Apathetic', 'Reluctant'],
+    },
+    {
+      word: 'Lucid',
+      correct: 'Clear and easily understood',
+      wrong: ['Confusing', 'Unclear', 'Obscure'],
+    },
+  ];
+
+  const variants = [
+    () => {
+      const grammar = grammarQuestions[baseSeed % grammarQuestions.length];
+      return {
+        prompt: grammar.prompt,
+        answer: grammar.answer,
+        explanation: grammar.explanation,
+        options: shuffleDeterministic(grammar.options, baseSeed),
+      };
+    },
+    () => {
+      const vocab = vocabQuestions[baseSeed % vocabQuestions.length];
+      return {
+        prompt: `The word "${vocab.word}" is closest in meaning to...`,
+        answer: vocab.correct,
+        explanation: `"${vocab.word}" berarti "${vocab.correct}"`,
+        options: shuffleDeterministic([vocab.correct, ...vocab.wrong], baseSeed),
+      };
+    },
+  ];
+
+  const question = variants[index % variants.length]();
+  return {
+    id: `mcq-${moduleName}-${n}`,
+    module: moduleName,
+    ...question,
+  };
+};
+
+// ===== FACTORY FUNCTION =====
+const createMcqQuestion = (moduleName, index) => {
+  switch (moduleName) {
+    case 'Matematika Simak UI':
+      return createSimakMathQuestion(moduleName, index);
+    case 'Matematika LPDP':
+      return createLpdpMathQuestion(moduleName, index);
+    case 'Tes Potensi Akademik':
+      return createTpaQuestion(moduleName, index);
+    case 'Soal Onkologi Radiasi':
+      return createOncologyQuestion(moduleName, index);
+    case 'Soal Toefl':
+      return createToeflQuestion(moduleName, index);
+    default:
+      return createSimakMathQuestion(moduleName, index);
+  }
+};
+
+// ===== ESSAY QUESTIONS =====
+const essayPrompts = {
+  'Matematika Simak UI': [
+    'Jelaskan konsep limit fungsi dan berikan contoh penerapannya dalam menyelesaikan persoalan tak tentu.',
+    'Bagaimana hubungan antara turunan pertama fungsi dengan kecekungan dan titik ekstrem grafik fungsi?',
+    'Jelaskan metode substitusi dan metode eliminasi dalam sistem persamaan linear. Kapan masing-masing metode lebih efektif?',
+    'Apa yang dimaksud dengan barisan dan deret geometri? Berikan contoh aplikasinya dalam kehidupan nyata.',
+    'Jelaskan teorema Pythagoras dan buktikan kebenarannya.',
+    'Bagaimana cara menentukan persamaan garis singgung pada kurva di suatu titik?',
+    'Jelaskan konsep matriks dan operasi-operasi dasar yang dapat dilakukan pada matriks.',
+    'Apa perbedaan antara permutasi dan kombinasi? Berikan contoh kasus untuk masing-masing.',
+    'Jelaskan konsep integral tak tentu dan aplikasinya dalam menghitung luas daerah.',
+    'Bagaimana menyelesaikan pertidaksamaan kuadrat? Jelaskan langkah-langkahnya.',
+  ],
+  'Matematika LPDP': [
+    'Jelaskan konsep rasio dan proporsi serta aplikasinya dalam pemecahan masalah keuangan.',
+    'Bagaimana cara menghitung bunga tunggal dan bunga majemak? Berikan perbedaan utama keduanya.',
+    'Jelaskan konsep present value dan future value dalam konteks investasi.',
+    'Apa yang dimaksud dengan anuitas? Bagaimana cara menghitung cicilan anuitas?',
+    'Jelaskan konsep persentase kenaikan dan penurunan dalam konteks ekonomi.',
+    'Bagaimana analisis break-even point dapat membantu dalam pengambilan keputusan bisnis?',
+    'Jelaskan konsep statistika deskriptif: mean, median, modus, dan standar deviasi.',
+    'Apa perbedaan antara probabilitas teoritis dan probabilitas empiris?',
+    'Jelaskan konsep sampling dan bagaimana menentukan ukuran sampel yang representatif.',
+    'Bagaimana interpretasi data dari tabel dan grafik dalam pengambilan keputusan?',
+  ],
+  'Tes Potensi Akademik': [
+    'Jelaskan struktur penalaran logis dalam argumen deduktif dan induktif. Berikan contoh masing-masing.',
+    'Bagaimana cara mengidentifikasi asumsi yang mendasari suatu argumen?',
+    'Jelaskan jenis-jenis fallacy (kesalahan berpikir) yang sering muncul dalam argumen.',
+    'Apa yang dimaksud dengan inferensi? Bagaimana membuat inferensi yang valid dari teks?',
+    'Jelaskan teknik membaca cepat (skimming dan scanning) dan kapan menggunakannya.',
+    'Bagaimana cara menganalisis hubungan sebab-akibat dalam teks akademik?',
+    'Jelaskan konsep analogi verbal dan bagaimana mengidentifikasi pola hubungan antar kata.',
+    'Apa strategi terbaik untuk menyelesaikan soal deret dan pola angka?',
+    'Jelaskan metode eliminasi dalam menjawab soal pilihan ganda yang kompleks.',
+    'Bagaimana mengelola waktu secara efektif saat mengerjakan tes potensi akademik?',
+  ],
+  'Soal Onkologi Radiasi': [
+    'Jelaskan mekanisme kerja radiasi dalam membunuh sel kanker pada tingkat molekuler.',
+    'Apa yang dimaksud dengan fraksionasi radioterapi? Mengapa penting dalam perawatan pasien?',
+    'Jelaskan perbedaan antara teleterapi (external beam) dan brachytherapy.',
+    'Bagaimana radiasi mempengaruhi jaringan normal dan apa strategi untuk melindunginya?',
+    'Jelaskan konsep Linear Energy Transfer (LET) dan Relative Biological Effectiveness (RBE).',
+    'Apa yang dimaksud dengan radiosensitizer dan radioprotector? Berikan contoh masing-masing.',
+    'Jelaskan proses simulasi dan perencanaan radioterapi menggunakan CT simulator.',
+    'Bagaimana manajemen efek samping akut dan kronis radioterapi pada pasien?',
+    'Jelaskan konsep biologi tumor: hipoksia, repopulasi, dan redistribusi sel.',
+    'Apa peran imaging (CT, MRI, PET) dalam perencanaan dan evaluasi radioterapi modern?',
+  ],
+  'Soal Toefl': [
+    'Jelaskan perbedaan penggunaan Simple Present Tense dan Present Continuous Tense. Berikan contoh kalimat.',
+    'Bagaimana menggunakan conditional sentences (type 0, 1, 2, 3) dengan benar?',
+    'Jelaskan perbedaan antara active voice dan passive voice. Kapan sebaiknya menggunakan passive?',
+    'Apa yang dimaksud dengan reported speech? Bagaimana aturan perubahan tense-nya?',
+    'Jelaskan penggunaan phrasal verbs dalam bahasa Inggris dan berikan contoh.',
+    'Bagaimana cara mengidentifikasi main idea dan supporting details dalam reading comprehension?',
+    'Jelaskan strategi note-taking yang efektif untuk listening comprehension test.',
+    'Apa yang dimaksud dengan cohesive devices? Berikan contoh dan fungsinya.',
+    'Jelaskan struktur essay akademik yang baik: introduction, body, dan conclusion.',
+    'Bagaimana cara meningkatkan vocabulary untuk persiapan TOEFL secara efektif?',
+  ],
+};
+
 const createEssayQuestion = (moduleName, index) => {
   const n = index + 1;
+  const prompts = essayPrompts[moduleName] || essayPrompts['Matematika Simak UI'];
+  const promptIndex = (index) % prompts.length;
   return {
     id: `essay-${moduleName}-${n}`,
     module: moduleName,
-    prompt: `[${moduleName}] Soal Essai ${n}: Jelaskan langkah terstruktur yang Anda gunakan untuk menyelesaikan topik "${moduleName}" dan bagaimana Anda mengevaluasi hasilnya.`,
+    prompt: `Soal ${n}: ${prompts[promptIndex]}`,
+    hint: getEssayHint(moduleName, promptIndex),
   };
+};
+
+const getEssayHint = (moduleName, promptIndex) => {
+  const hints = {
+    'Matematika Simak UI': [
+      'Gunakan konsep limit kiri dan limit kanan.',
+      'Perhatikan tanda turunan pertama dan kedua.',
+      'Bandingkan kelebihan dan kekurangan kedua metode.',
+      'Rumuskan suku pertama dan rasio.',
+      'Gambarkan segitiga siku-siku.',
+      'Gunakan konsep turunan sebagai gradien garis singgung.',
+      'Sebutkan sifat-sifat operasi matriks.',
+      'Perhatikan urutan penting atau tidak.',
+      'Jelaskan teorema dasar kalkulus.',
+      'Perhatikan tanda koefisien x².',
+    ],
+    'Matematika LPDP': [
+      'Gunakan contoh perbandingan harga.',
+      'Rumuskan bunga tunggal: B = P×r×t.',
+      'Jelaskan faktor diskon dan compound interest.',
+      'Gunakan tabel amortisasi.',
+      'Hitung selisih dan proporsinya.',
+      'Tentukan titik di mana TC = TR.',
+      'Jelaskan interpretasi masing-masing ukuran.',
+      'Gunakan contoh pelemparan dadu.',
+      'Jelaskan margin of error dan confidence level.',
+      'Identifikasi tren dan anomali data.',
+    ],
+    'Tes Potensi Akademik': [
+      'Contoh: silogisme dan generalisasi.',
+      'Cari premis yang tidak dinyatakan eksplisit.',
+      'Sebutkan: ad hominem, false cause, dll.',
+      'Berdasarkan informasi yang tersedia.',
+      'Skimming untuk gambaran umum.',
+      'Identifikasi kata penghubung sebab-akibat.',
+      'Sebutkan jenis hubungan: sinonim, antonim, fungsi.',
+      'Cari pola aritmatika atau geometri.',
+      'Eliminasi opsi yang paling jelas salah.',
+      'Alokasikan waktu per soal secara proporsional.',
+    ],
+    'Soal Onkologi Radiasi': [
+      'Jelaskan radikal bebas dan kerusakan DNA.',
+      'Sebutkan 4 R biologis radiasi.',
+      'Bandingkan jarak sumber dan dosis jatuh.',
+      'Gunakan teknik fraksionasi dan shielding.',
+      'LET tinggi = RBE tinggi.',
+      'Contoh: cisplatin dan amifostine.',
+      'Jelaskan immobilization dan contouring.',
+      'Bedakan efek akut (minggu) dan kronis (bulan/tahun).',
+      'Jelaskan reoxygenation dan reassortment.',
+      'PET untuk target volume biologis.',
+    ],
+    'Soal Toefl': [
+      'Simple present untuk kebiasaan, present continuous untuk yang sedang terjadi.',
+      'Type 0 (fakta), 1 (mungkin terjadi), 2 (tidak mungkin), 3 (menyesal).',
+      'Passive: objek menjadi subjek + be + V3.',
+      'Lihat perubahan tense dan kata kerja.',
+      'Phrasal verb = verb + preposition/adverb.',
+      'Main idea biasanya di awal paragraf.',
+      'Gunakan simbol dan singkatan.',
+      'Contoh: however, therefore, moreover.',
+      'Introduction: hook + thesis statement.',
+      'Baca kontekstual dan buat word map.',
+    ],
+  };
+  const moduleHints = hints[moduleName] || hints['Matematika Simak UI'];
+  return moduleHints[promptIndex % moduleHints.length];
+};
+
+// ===== FLASHCARD CONTENT =====
+const flashcardContent = {
+  'Matematika Simak UI': [
+    { front: 'Limit Fungsi', back: 'Nilai yang didekati fungsi saat variabel mendekati suatu nilai tertentu. Notasi: lim(x→a) f(x) = L' },
+    { front: 'Turunan (Derivatif)', back: 'Ukuran laju perubahan fungsi. f\'(x) = lim(h→0) [f(x+h) - f(x)]/h' },
+    { front: 'Integral', back: 'Kebalikan dari turunan. Digunakan untuk menghitung luas, volume, dan akumulasi.' },
+    { front: 'Teorema Pythagoras', back: 'Pada segitiga siku-siku: a² + b² = c², di mana c adalah sisi miring.' },
+    { front: 'Barisan Aritmatika', back: 'Barisan dengan beda tetap. Rumus: Un = a + (n-1)b' },
+    { front: 'Barisan Geometri', back: 'Barisan dengan rasio tetap. Rumus: Un = ar^(n-1)' },
+    { front: 'Matriks', back: 'Susunan bilangan dalam baris dan kolom. Operasi: penjumlahan, perkalian, determinan.' },
+    { front: 'Persamaan Kuadrat', back: 'ax² + bx + c = 0. Penyelesaian: faktorisasi, rumus abc, melengkapkan kuadrat.' },
+    { front: 'Trigonometri', back: 'Sin = o/h, Cos = a/h, Tan = o/a. Identitas: sin² + cos² = 1' },
+    { front: 'Logaritma', back: 'Logₐb = c berarti a^c = b. Sifat: log(ab) = log a + log b' },
+    { front: 'Fungsi Eksponensial', back: 'f(x) = a^x, a > 0. Grafik selalu di atas sumbu x.' },
+    { front: 'Program Linear', back: 'Optimasi fungsi linear dengan kendala linear. Gunakan garis selidik.' },
+  ],
+  'Matematika LPDP': [
+    { front: 'Bunga Tunggal', back: 'B = P × r × t. Bunga dihitung hanya dari pokok pinjaman.' },
+    { front: 'Bunga Majemak', back: 'A = P(1 + r)^t. Bunga dihitung dari pokok + bunga sebelumnya.' },
+    { front: 'Rasio', back: 'Perbandingan dua besaran. a:b atau a/b.' },
+    { front: 'Proporsi', back: 'Persamaan dua rasio yang setara. a/b = c/d' },
+    { front: 'Persentase', back: 'Per seratus. % = (bagian/keseluruhan) × 100%' },
+    { front: 'Diskon', back: 'Potongan harga. Harga akhir = Harga awal × (1 - %diskon)' },
+    { front: 'Present Value', back: 'Nilai sekarang dari uang di masa depan. PV = FV/(1+r)^n' },
+    { front: 'Future Value', back: 'Nilai uang di masa depan. FV = PV(1+r)^n' },
+    { front: 'Mean (Rata-rata)', back: 'Jumlah data dibagi banyaknya data. μ = Σx/n' },
+    { front: 'Median', back: 'Nilai tengah data yang terurut.' },
+    { front: 'Modus', back: 'Nilai yang paling sering muncul.' },
+    { front: 'Standar Deviasi', back: 'Ukuran penyebaran data. σ = √[Σ(x-μ)²/n]' },
+  ],
+  'Tes Potensi Akademik': [
+    { front: 'Silogisme', back: 'Penarikan kesimpulan dari dua premis. Contoh: Socrates adalah manusia, semua manusia fana.' },
+    { front: 'Analogi', back: 'Kesesuaian hubungan antara dua pasang kata. A:B = C:D' },
+    { front: 'Inferensi', back: 'Penarikan kesimpulan berdasarkan bukti dan penalaran.' },
+    { front: 'Premis', back: 'Pernyataan yang menjadi dasar argumen atau kesimpulan.' },
+    { front: 'Kesimpulan', back: 'Pernyataan yang diperoleh dari premis-premis.' },
+    { front: 'Fallacy', back: 'Kesalahan dalam penalaran yang membuat argumen tidak valid.' },
+    { front: 'Skimming', back: 'Teknik membaca cepat untuk mendapatkan gambaran umum.' },
+    { front: 'Scanning', back: 'Teknik membaca cepat untuk mencari informasi spesifik.' },
+    { front: 'Main Idea', back: 'Gagasan utama atau pokok pikiran dalam teks.' },
+    { front: 'Supporting Detail', back: 'Detail yang mendukung dan menjelaskan main idea.' },
+    { front: 'Sinonim', back: 'Kata yang memiliki makna sama atau mirip.' },
+    { front: 'Antonim', back: 'Kata yang memiliki makna berlawanan.' },
+  ],
+  'Soal Onkologi Radiasi': [
+    { front: 'Radiasi Ionisasi', back: 'Radiasi dengan energi cukup untuk mengionisasi atom, menyebabkan kerusakan DNA.' },
+    { front: 'Gray (Gy)', back: 'Unit dosis serap radiasi. 1 Gy = 1 joule/kg.' },
+    { front: 'Sievert (Sv)', back: 'Unit dosis ekuivalen yang memperhitungkan efek biologis radiasi.' },
+    { front: 'Fraksionasi', back: 'Pembagian dosis radiasi total menjadi beberapa sesi kecil.' },
+    { front: 'Brachytherapy', back: 'Radioterapi dengan sumber radioaktif ditempatkan di dalam/dekat tumor.' },
+    { front: 'Teletherapy', back: 'Radioterapi dengan sumber radiasi di luar tubuh (external beam).' },
+    { front: 'LET (Linear Energy Transfer)', back: 'Energi yang diserap radiasi per satuan panjang lintasan.' },
+    { front: 'RBE (Relative Biological Effectiveness)', back: 'Efektivitas biologis relatif suatu radiasi dibandingkan sinar-X.' },
+    { front: 'Oxygen Effect', back: 'Oksigen meningkatkan efek radiasi dengan memperkuat radikal bebas.' },
+    { front: 'Radiosensitizer', back: 'Zat yang meningkatkan sensitivitas sel terhadap radiasi.' },
+    { front: 'Radioprotector', back: 'Zat yang melindungi jaringan normal dari efek radiasi.' },
+    { front: '4 R Biologis', back: 'Repair, Reassortment, Repopulation, Reoxygenation - respons sel terhadap fraksionasi.' },
+  ],
+  'Soal Toefl': [
+    { front: 'Simple Present', back: 'Untuk kebiasaan dan fakta. S+V1(s/es), S+do/does+not+V1' },
+    { front: 'Present Continuous', back: 'Untuk yang sedang terjadi. S+am/is/are+V-ing' },
+    { front: 'Past Perfect', back: 'Aksi yang selesai sebelum aksi lain di masa lalu. S+had+V3' },
+    { front: 'Future Perfect', back: 'Aksi yang akan selesai pada waktu tertentu. S+will+have+V3' },
+    { front: 'Passive Voice', back: 'Subjek menerima aksi. S+to be+V3+(by agent)' },
+    { front: 'Conditional Type 1', back: 'Real future possible. If+S+V1, S+will+V1' },
+    { front: 'Conditional Type 2', back: 'Unreal present. If+S+V2, S+would+V1' },
+    { front: 'Conditional Type 3', back: 'Unreal past. If+S+had+V3, S+would+have+V3' },
+    { front: 'Reported Speech', back: 'Penuturan tidak langsung. Perhatikan perubahan tense dan kata.' },
+    { front: 'Gerund', back: 'Bentuk V-ing yang berfungsi sebagai nomina. Suka + V-ing' },
+    { front: 'Infinitive', back: 'Bentuk to+V1. Digunakan setelah certain verbs dan adj.' },
+    { front: 'Comparative', back: 'Perbandingan. Adj+er/more+Adj+than' },
+  ],
 };
 
 const createFlashcard = (moduleName, index) => {
   const n = index + 1;
+  const cards = flashcardContent[moduleName] || flashcardContent['Matematika Simak UI'];
+  const cardIndex = index % cards.length;
+  const card = cards[cardIndex];
   return {
     id: `fc-${moduleName}-${n}`,
     module: moduleName,
-    front: `[${moduleName}] Konsep ${n}`,
-    back: `Ringkasan konsep ${n}: pahami definisi, contoh penerapan, dan kesalahan umum agar performa latihan meningkat.`,
+    front: card.front,
+    back: card.back,
   };
 };
 
@@ -134,12 +909,15 @@ const initialState = {
   selectedModule: modules[0],
   selectedType: 'mcq',
   mcqAnswers: {},
+  mcqShowExplanation: {},
   essayAnswers: {},
   flashcardFlips: {},
   masteredFlashcards: {},
   query: '',
   page: 1,
   mcqFilter: 'all',
+  showMasteredFlashcards: true,
+  darkMode: true,
 };
 
 function App() {
@@ -150,7 +928,7 @@ function App() {
     if (!savedState) return;
     try {
       const parsed = JSON.parse(savedState);
-      setState({ ...initialState, ...parsed });
+      setState((prev) => ({ ...initialState, ...parsed }));
     } catch {
       setState(initialState);
     }
@@ -196,9 +974,17 @@ function App() {
     });
   }, [state.selectedModule, state.selectedType, state.query, state.mcqAnswers, state.mcqFilter]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
+  // Filter flashcards for mastered toggle
+  const displayItems = useMemo(() => {
+    if (state.selectedType !== 'flashcards' || state.showMasteredFlashcards) {
+      return filteredItems;
+    }
+    return filteredItems.filter((item) => !state.masteredFlashcards[item.id]);
+  }, [filteredItems, state.selectedType, state.showMasteredFlashcards, state.masteredFlashcards]);
+
+  const totalPages = Math.max(1, Math.ceil(displayItems.length / PAGE_SIZE));
   const currentPage = Math.min(state.page, totalPages);
-  const pagedItems = filteredItems.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const pagedItems = displayItems.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const moduleMcq = useMemo(
     () => questionBank.mcq.filter((question) => question.module === state.selectedModule),
@@ -219,17 +1005,24 @@ function App() {
   const essayAnsweredCount = moduleEssay.filter((q) => (state.essayAnswers[q.id] || '').trim()).length;
   const masteredFlashcardsCount = moduleFlashcards.filter((q) => state.masteredFlashcards[q.id]).length;
 
+  // Calculate accuracy rate
+  const accuracyRate = answeredCount > 0 ? Math.round((correctCount / answeredCount) * 100) : 0;
+
   const jumpToRandomQuestion = () => {
-    if (!filteredItems.length) return;
-    const randomIndex = Math.floor(Math.random() * filteredItems.length);
+    if (!displayItems.length) return;
+    const randomIndex = Math.floor(Math.random() * displayItems.length);
     updateState({ page: Math.floor(randomIndex / PAGE_SIZE) + 1 });
   };
 
   const resetCurrentType = () => {
     if (state.selectedType === 'mcq') {
       const nextAnswers = { ...state.mcqAnswers };
-      moduleMcq.forEach((q) => delete nextAnswers[q.id]);
-      updateState({ mcqAnswers: nextAnswers });
+      const nextExplanations = { ...state.mcqShowExplanation };
+      moduleMcq.forEach((q) => {
+        delete nextAnswers[q.id];
+        delete nextExplanations[q.id];
+      });
+      updateState({ mcqAnswers: nextAnswers, mcqShowExplanation: nextExplanations });
       return;
     }
 
@@ -253,12 +1046,45 @@ function App() {
     updateState({ flashcardFlips: nextFlips, masteredFlashcards: nextMastered });
   };
 
+  const toggleExplanation = (questionId) => {
+    updateState({
+      mcqShowExplanation: {
+        ...state.mcqShowExplanation,
+        [questionId]: !state.mcqShowExplanation[questionId],
+      },
+    });
+  };
+
   const onChangeModule = (moduleName) => {
     updateState({ selectedModule: moduleName, page: 1, query: '', mcqFilter: 'all' });
   };
 
   const onChangeType = (type) => {
     updateState({ selectedType: type, page: 1, query: '', mcqFilter: 'all' });
+  };
+
+  const exportProgress = () => {
+    const data = {
+      module: state.selectedModule,
+      type: state.selectedType,
+      timestamp: new Date().toISOString(),
+      stats: {
+        mcqAnswered: answeredCount,
+        mcqCorrect: correctCount,
+        mcqTotal: moduleMcq.length,
+        essayAnswered: essayAnsweredCount,
+        essayTotal: moduleEssay.length,
+        flashcardsMastered: masteredFlashcardsCount,
+        flashcardsTotal: moduleFlashcards.length,
+      },
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `progress-${state.selectedModule}-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -280,6 +1106,11 @@ function App() {
                 <small>{module.tag}</small>
               </button>
             ))}
+          </div>
+          <div className="sidebar-footer">
+            <button className="ghost" onClick={exportProgress}>
+              📊 Export Progress
+            </button>
           </div>
         </aside>
 
@@ -318,8 +1149,8 @@ function App() {
               </strong>
             </article>
             <article className="stat-card">
-              <span>Benar</span>
-              <strong>{correctCount}</strong>
+              <span>Akurasi</span>
+              <strong>{accuracyRate}%</strong>
             </article>
             <article className="stat-card">
               <span>Progress</span>
@@ -327,11 +1158,11 @@ function App() {
             </article>
             <article className="stat-card">
               <span>Essai Terisi</span>
-              <strong>{essayAnsweredCount}</strong>
+              <strong>{essayAnsweredCount}/{QUESTION_COUNT_PER_MODULE}</strong>
             </article>
             <article className="stat-card">
               <span>Flashcard Dikuasai</span>
-              <strong>{masteredFlashcardsCount}</strong>
+              <strong>{masteredFlashcardsCount}/{QUESTION_COUNT_PER_MODULE}</strong>
             </article>
           </section>
 
@@ -361,25 +1192,50 @@ function App() {
                 <option value="correct">Jawaban benar</option>
                 <option value="wrong">Jawaban salah</option>
               </select>
+            ) : state.selectedType === 'flashcards' ? (
+              <label className="toggle-label">
+                <input
+                  type="checkbox"
+                  checked={state.showMasteredFlashcards}
+                  onChange={(e) => updateState({ showMasteredFlashcards: e.target.checked })}
+                />
+                Tampilkan yang sudah dikuasai
+              </label>
             ) : null}
-            <button className="ghost" onClick={jumpToRandomQuestion}>Soal acak</button>
-            <button className="ghost" onClick={resetCurrentType}>Reset data tipe ini</button>
+            <button className="ghost" onClick={jumpToRandomQuestion}>🎲 Soal acak</button>
+            <button className="ghost danger" onClick={resetCurrentType}>🗑️ Reset data</button>
           </section>
 
-          {filteredItems.length === 0 ? (
-            <div className="card empty">Tidak ada konten sesuai pencarian. Coba kata kunci lain.</div>
+          {displayItems.length === 0 ? (
+            <div className="card empty">
+              {state.selectedType === 'flashcards' && !state.showMasteredFlashcards
+                ? 'Semua flashcard sudah dikuasai! 🎉 Atau coba aktifkan "Tampilkan yang sudah dikuasai"'
+                : 'Tidak ada konten sesuai pencarian. Coba kata kunci lain.'}
+            </div>
           ) : null}
 
           {state.selectedType === 'mcq' &&
             pagedItems.map((q) => {
               const selected = state.mcqAnswers[q.id];
               const isCorrect = selected === q.answer;
+              const showExplanation = state.mcqShowExplanation[q.id];
               return (
                 <section className="card" key={q.id}>
+                  <div className="question-header">
+                    <span className="question-number">Soal {(currentPage - 1) * PAGE_SIZE + pagedItems.indexOf(q) + 1}</span>
+                    {selected && (
+                      <span className={`status-badge ${isCorrect ? 'correct' : 'wrong'}`}>
+                        {isCorrect ? '✓ Benar' : '✗ Salah'}
+                      </span>
+                    )}
+                  </div>
                   <h3>{q.prompt}</h3>
                   <div className="stack">
                     {q.options.map((option) => (
-                      <label key={option} className="option">
+                      <label 
+                        key={option} 
+                        className={`option ${selected ? (option === q.answer ? 'correct-answer' : (option === selected && option !== q.answer ? 'wrong-answer' : '')) : ''}`}
+                      >
                         <input
                           type="radio"
                           name={q.id}
@@ -395,40 +1251,76 @@ function App() {
                     ))}
                   </div>
                   {selected ? (
-                    <p className={isCorrect ? 'ok' : 'wrong'}>
-                      {isCorrect ? 'Jawaban benar ✅' : `Belum tepat. Jawaban benar: ${q.answer}`}
-                    </p>
+                    <div className="feedback-section">
+                      <p className={isCorrect ? 'ok' : 'wrong'}>
+                        {isCorrect ? 'Jawaban benar! ✅' : `Jawabanmu: "${selected}" — Belum tepat. Jawaban benar: "${q.answer}"`}
+                      </p>
+                      <button 
+                        className="ghost small"
+                        onClick={() => toggleExplanation(q.id)}
+                      >
+                        {showExplanation ? 'Sembunyikan penjelasan' : 'Lihat penjelasan'}
+                      </button>
+                      {showExplanation && q.explanation && (
+                        <div className="explanation-box">
+                          <strong>💡 Penjelasan:</strong>
+                          <p>{q.explanation}</p>
+                        </div>
+                      )}
+                    </div>
                   ) : null}
                 </section>
               );
             })}
 
           {state.selectedType === 'essay' &&
-            pagedItems.map((q) => (
-              <section className="card" key={q.id}>
-                <h3>{q.prompt}</h3>
-                <textarea
-                  rows={5}
-                  placeholder="Tulis jawaban essai kamu di sini..."
-                  value={state.essayAnswers[q.id] || ''}
-                  onChange={(e) =>
-                    updateState({
-                      essayAnswers: { ...state.essayAnswers, [q.id]: e.target.value },
-                    })
-                  }
-                />
-                <p className="subtle-info">
-                  Jumlah kata: {(state.essayAnswers[q.id] || '').trim().split(/\s+/).filter(Boolean).length}
-                </p>
-              </section>
-            ))}
+            pagedItems.map((q) => {
+              const wordCount = (state.essayAnswers[q.id] || '').trim().split(/\s+/).filter(Boolean).length;
+              const charCount = (state.essayAnswers[q.id] || '').length;
+              return (
+                <section className="card" key={q.id}>
+                  <div className="question-header">
+                    <span className="question-number">Soal {(currentPage - 1) * PAGE_SIZE + pagedItems.indexOf(q) + 1}</span>
+                    {wordCount > 0 && (
+                      <span className="status-badge answered">
+                        {wordCount} kata
+                      </span>
+                    )}
+                  </div>
+                  <h3>{q.prompt}</h3>
+                  {q.hint && (
+                    <div className="hint-box">
+                      <strong>💡 Petunjuk:</strong> {q.hint}
+                    </div>
+                  )}
+                  <textarea
+                    rows={6}
+                    placeholder="Tulis jawaban essai kamu di sini..."
+                    value={state.essayAnswers[q.id] || ''}
+                    onChange={(e) =>
+                      updateState({
+                        essayAnswers: { ...state.essayAnswers, [q.id]: e.target.value },
+                      })
+                    }
+                  />
+                  <p className="subtle-info">
+                    {wordCount} kata • {charCount} karakter
+                    {wordCount < 10 && wordCount > 0 && ' (tambahkan lebih banyak untuk jawaban yang lengkap)'}
+                  </p>
+                </section>
+              );
+            })}
 
           {state.selectedType === 'flashcards' &&
             pagedItems.map((card) => {
               const flipped = !!state.flashcardFlips[card.id];
               const mastered = !!state.masteredFlashcards[card.id];
               return (
-                <section key={card.id} className="card">
+                <section key={card.id} className={`card flashcard-wrapper ${mastered ? 'mastered-card' : ''}`}>
+                  <div className="question-header">
+                    <span className="question-number">Kartu {(currentPage - 1) * PAGE_SIZE + pagedItems.indexOf(card) + 1}</span>
+                    {mastered && <span className="status-badge mastered">✓ Dikuasai</span>}
+                  </div>
                   <button
                     className={flipped ? 'flashcard flipped' : 'flashcard'}
                     onClick={() =>
@@ -440,23 +1332,38 @@ function App() {
                       })
                     }
                   >
-                    <small>{flipped ? 'Back' : 'Front'}</small>
+                    <small>{flipped ? 'Sisi Belakang' : 'Sisi Depan'}</small>
                     <p>{flipped ? card.back : card.front}</p>
-                    <span>Klik untuk membalik kartu</span>
+                    <span className="flip-hint">{flipped ? '👆 Klik untuk kembali' : '👆 Klik untuk membalik'}</span>
                   </button>
-                  <button
-                    className={mastered ? 'ghost mastered' : 'ghost'}
-                    onClick={() =>
-                      updateState({
-                        masteredFlashcards: {
-                          ...state.masteredFlashcards,
-                          [card.id]: !mastered,
-                        },
-                      })
-                    }
-                  >
-                    {mastered ? 'Sudah dikuasai ✅' : 'Tandai dikuasai'}
-                  </button>
+                  <div className="flashcard-actions">
+                    <button
+                      className={mastered ? 'ghost mastered' : 'ghost'}
+                      onClick={() =>
+                        updateState({
+                          masteredFlashcards: {
+                            ...state.masteredFlashcards,
+                            [card.id]: !mastered,
+                          },
+                        })
+                      }
+                    >
+                      {mastered ? '✓ Sudah dikuasai' : '✓ Tandai dikuasai'}
+                    </button>
+                    <button
+                      className="ghost"
+                      onClick={() =>
+                        updateState({
+                          flashcardFlips: {
+                            ...state.flashcardFlips,
+                            [card.id]: false,
+                          },
+                        })
+                      }
+                    >
+                      ↺ Reset kartu
+                    </button>
+                  </div>
                 </section>
               );
             })}
@@ -467,17 +1374,18 @@ function App() {
               onClick={() => updateState({ page: Math.max(1, currentPage - 1) })}
               disabled={currentPage === 1}
             >
-              Sebelumnya
+              ← Sebelumnya
             </button>
-            <p>
-              Halaman {currentPage} / {totalPages}
-            </p>
+            <div className="page-info">
+              <p>Halaman {currentPage} / {totalPages}</p>
+              <small>{displayItems.length} item total</small>
+            </div>
             <button
               className="tab"
               onClick={() => updateState({ page: Math.min(totalPages, currentPage + 1) })}
               disabled={currentPage === totalPages}
             >
-              Berikutnya
+              Berikutnya →
             </button>
           </footer>
         </main>
