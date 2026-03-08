@@ -1,16 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 const moduleConfigs = [
-  { name: 'Matematika Simak UI', tag: 'Analitik Kuantitatif' },
-  { name: 'Matematika LPDP', tag: 'Reasoning Numerik' },
-  { name: 'Tes Potensi Akademik', tag: 'Verbal & Logika' },
-  { name: 'Soal Onkologi Radiasi', tag: 'Konsep Medis' },
-  { name: 'Soal Toefl', tag: 'English Mastery' },
+  { name: 'Matematika Simak UI', tag: 'Analitik Kuantitatif', questionCount: 200 },
+  { name: 'Matematika LPDP', tag: 'Reasoning Numerik', questionCount: 200 },
+  { name: 'Tes Potensi Akademik', tag: 'Verbal & Logika', questionCount: 200 },
+  { name: 'Soal Onkologi Radiasi', tag: 'Konsep Medis', questionCount: 200 },
+  { name: 'Soal Toefl', tag: 'English Mastery', questionCount: 200 },
+  { name: 'UKMPPD', tag: 'Clinical Reasoning', questionCount: 100 },
+  { name: 'TPA Bappenas', tag: 'Verbal, Numerik & Logika', questionCount: 100 },
+  { name: 'IELTS', tag: 'Academic English', questionCount: 100 },
+  { name: 'Bahasa Spanyol', tag: 'Español Básico', questionCount: 100 },
 ];
 
 const modules = moduleConfigs.map((module) => module.name);
-const QUESTION_COUNT_PER_MODULE = 200;
+const DEFAULT_QUESTION_COUNT_PER_MODULE = 200;
 const PAGE_SIZE = 10;
+
 
 // Hash function untuk generate seed unik per modul
 const hashString = (str) => {
@@ -637,6 +642,90 @@ const createToeflQuestion = (moduleName, index) => {
   };
 };
 
+
+
+// ===== SOAL BAHASA SPANYOL =====
+const createSpanishQuestion = (moduleName, index) => {
+  const n = index + 1;
+  const baseSeed = hashString(moduleName) + n * 997;
+
+  const grammarQuestions = [
+    {
+      prompt: 'Yo ___ estudiante de medicina.',
+      answer: 'soy',
+      explanation: 'Kata kerja "ser" untuk subjek "yo" adalah "soy".',
+      options: ['soy', 'eres', 'es', 'somos'],
+    },
+    {
+      prompt: 'Nosotros ___ en la biblioteca todos los días.',
+      answer: 'estudiamos',
+      explanation: 'Konjugasi regular -ar untuk "nosotros" adalah akhiran -amos.',
+      options: ['estudiamos', 'estudia', 'estudian', 'estudio'],
+    },
+    {
+      prompt: '¿Cómo se dice "good morning" en español?',
+      answer: 'Buenos días',
+      explanation: 'Sapaan pagi hari dalam bahasa Spanyol adalah "Buenos días".',
+      options: ['Buenos días', 'Buenas noches', 'Hasta luego', 'Por favor'],
+    },
+    {
+      prompt: 'Ella ___ en el hospital central.',
+      answer: 'trabaja',
+      explanation: 'Subjek "ella" memakai konjugasi orang ketiga tunggal: trabaja.',
+      options: ['trabaja', 'trabajo', 'trabajamos', 'trabajas'],
+    },
+    {
+      prompt: 'Mereka (ellos) tinggal di Madrid = Ellos ___ en Madrid.',
+      answer: 'viven',
+      explanation: 'Untuk "ellos", kata kerja vivir menjadi "viven".',
+      options: ['viven', 'vive', 'vivimos', 'vivo'],
+    },
+    {
+      prompt: '¿Cuál es la traducción de "thank you"?',
+      answer: 'Gracias',
+      explanation: '"Thank you" dalam bahasa Spanyol adalah "Gracias".',
+      options: ['Gracias', 'Perdón', 'De nada', 'Hola'],
+    },
+  ];
+
+  const vocabQuestions = [
+    { word: 'Libro', correct: 'Book', wrong: ['Pen', 'Chair', 'Window'] },
+    { word: 'Comida', correct: 'Food', wrong: ['Drink', 'School', 'Street'] },
+    { word: 'Ciudad', correct: 'City', wrong: ['Village', 'Mountain', 'River'] },
+    { word: 'Hospital', correct: 'Hospital', wrong: ['Hotel', 'Office', 'Airport'] },
+    { word: 'Escuela', correct: 'School', wrong: ['Market', 'Bank', 'Station'] },
+    { word: 'Familia', correct: 'Family', wrong: ['Friend', 'Neighbor', 'Teacher'] },
+  ];
+
+  const variants = [
+    () => {
+      const grammar = grammarQuestions[baseSeed % grammarQuestions.length];
+      return {
+        prompt: grammar.prompt,
+        answer: grammar.answer,
+        explanation: grammar.explanation,
+        options: shuffleDeterministic(grammar.options, baseSeed),
+      };
+    },
+    () => {
+      const vocab = vocabQuestions[baseSeed % vocabQuestions.length];
+      return {
+        prompt: `The Spanish word "${vocab.word}" means...`,
+        answer: vocab.correct,
+        explanation: `Arti kata "${vocab.word}" adalah "${vocab.correct}".`,
+        options: shuffleDeterministic([vocab.correct, ...vocab.wrong], baseSeed),
+      };
+    },
+  ];
+
+  const question = variants[index % variants.length]();
+  return {
+    id: `mcq-${moduleName}-${n}`,
+    module: moduleName,
+    ...question,
+  };
+};
+
 // ===== FACTORY FUNCTION =====
 const createMcqQuestion = (moduleName, index) => {
   switch (moduleName) {
@@ -650,6 +739,14 @@ const createMcqQuestion = (moduleName, index) => {
       return createOncologyQuestion(moduleName, index);
     case 'Soal Toefl':
       return createToeflQuestion(moduleName, index);
+    case 'UKMPPD':
+      return createOncologyQuestion(moduleName, index);
+    case 'TPA Bappenas':
+      return createTpaQuestion(moduleName, index);
+    case 'IELTS':
+      return createToeflQuestion(moduleName, index);
+    case 'Bahasa Spanyol':
+      return createSpanishQuestion(moduleName, index);
     default:
       return createSimakMathQuestion(moduleName, index);
   }
@@ -716,6 +813,55 @@ const essayPrompts = {
     'Apa yang dimaksud dengan cohesive devices? Berikan contoh dan fungsinya.',
     'Jelaskan struktur essay akademik yang baik: introduction, body, dan conclusion.',
     'Bagaimana cara meningkatkan vocabulary untuk persiapan TOEFL secara efektif?',
+  ],
+
+  'UKMPPD': [
+    'Jelaskan pendekatan klinis untuk menangani pasien dengan sesak napas akut di IGD.',
+    'Bagaimana langkah diagnosis banding nyeri dada pada pelayanan primer?',
+    'Jelaskan interpretasi dasar hasil EKG pada infark miokard akut.',
+    'Apa prinsip tatalaksana awal pasien syok sepsis?',
+    'Bagaimana pendekatan evidence-based medicine dalam pengambilan keputusan klinis?',
+    'Jelaskan tata laksana hipertensi pada pasien dengan komorbid diabetes melitus.',
+    'Bagaimana melakukan edukasi pasien untuk meningkatkan kepatuhan minum obat?',
+    'Jelaskan algoritma penanganan henti jantung sesuai ACLS secara ringkas.',
+    'Apa prinsip rasional penggunaan antibiotik untuk mencegah resistensi?',
+    'Bagaimana menyusun rencana tindak lanjut pada pasien penyakit kronis?',
+  ],
+  'TPA Bappenas': [
+    'Jelaskan strategi menyelesaikan soal sinonim dan antonim dengan cepat.',
+    'Bagaimana cara mengidentifikasi pola deret angka yang kompleks?',
+    'Apa langkah efektif untuk menyelesaikan soal logika analitik?',
+    'Jelaskan teknik eliminasi jawaban pada soal verbal reasoning.',
+    'Bagaimana manajemen waktu saat mengerjakan TPA dengan durasi terbatas?',
+    'Jelaskan cara membaca grafik dan tabel untuk menarik kesimpulan valid.',
+    'Apa perbedaan pendekatan deduktif dan induktif dalam soal penalaran?',
+    'Bagaimana cara meningkatkan akurasi pada soal hitung cepat numerik?',
+    'Jelaskan strategi menghadapi soal cerita matematika pada TPA.',
+    'Apa metode evaluasi diri setelah latihan tryout TPA?',
+  ],
+  'IELTS': [
+    'Jelaskan struktur jawaban ideal untuk IELTS Writing Task 1 Academic.',
+    'Bagaimana menyusun argumen yang koheren pada IELTS Writing Task 2?',
+    'Apa strategi efektif meningkatkan skor IELTS Reading?',
+    'Bagaimana teknik mencatat poin penting pada IELTS Listening?',
+    'Jelaskan cara memperluas lexical resource untuk IELTS Speaking.',
+    'Bagaimana menghindari grammar error yang umum pada tes IELTS?',
+    'Apa perbedaan register formal dan informal dalam konteks IELTS?',
+    'Bagaimana cara menjawab pertanyaan opini pada Speaking Part 3?',
+    'Jelaskan pentingnya cohesion dan coherence pada writing IELTS.',
+    'Bagaimana membuat rencana belajar 4 minggu untuk persiapan IELTS?',
+  ],
+  'Bahasa Spanyol': [
+    'Jelaskan perbedaan penggunaan kata kerja ser dan estar beserta contohnya.',
+    'Bagaimana pola konjugasi kata kerja regular berakhiran -ar, -er, dan -ir?',
+    'Apa strategi efektif menghafal kosakata dasar bahasa Spanyol?',
+    'Jelaskan penggunaan artikel tertentu dan tidak tertentu dalam bahasa Spanyol.',
+    'Bagaimana menyusun kalimat negatif dan interogatif sederhana?',
+    'Apa perbedaan antara por dan para dalam kalimat sehari-hari?',
+    'Jelaskan struktur kalimat sederhana Subject-Verb-Object dalam bahasa Spanyol.',
+    'Bagaimana menggunakan kata sifat dan kesesuaian gender/number?',
+    'Apa cara terbaik melatih listening bahasa Spanyol untuk pemula?',
+    'Bagaimana menulis paragraf perkenalan diri dalam bahasa Spanyol?',
   ],
 };
 
@@ -792,6 +938,54 @@ const getEssayHint = (moduleName, promptIndex) => {
       'Contoh: however, therefore, moreover.',
       'Introduction: hook + thesis statement.',
       'Baca kontekstual dan buat word map.',
+    ],
+    'UKMPPD': [
+      'Mulai dari ABCDE dan stabilisasi pasien.',
+      'Kelompokkan penyebab kardiak vs non-kardiak.',
+      'Perhatikan elevasi ST, depresi ST, dan inversi T.',
+      'Ikuti bundle sepsis: cairan, kultur, antibiotik dini.',
+      'Gunakan PICO dan nilai kualitas bukti.',
+      'Sesuaikan target tekanan darah dan risiko kardiovaskular.',
+      'Gunakan komunikasi empatik dan teach-back.',
+      'Ingat urutan CPR, defibrilasi, airway, obat.',
+      'Pertimbangkan indikasi, spektrum, dan durasi terapi.',
+      'Tentukan jadwal kontrol dan parameter monitoring.',
+    ],
+    'TPA Bappenas': [
+      'Gunakan konteks kata dan eliminasi opsi.',
+      'Cek selisih, rasio, dan pola campuran.',
+      'Visualisasikan hubungan antar pernyataan.',
+      'Singkirkan distraktor yang tidak relevan.',
+      'Bagi waktu per bagian dan sisakan review.',
+      'Fokus pada tren, perbandingan, dan outlier.',
+      'Deduktif dari umum ke khusus; induktif sebaliknya.',
+      'Latih aritmetika mental dan estimasi cepat.',
+      'Terjemahkan narasi ke model matematika.',
+      'Catat jenis salah untuk bahan perbaikan.',
+    ],
+    'IELTS': [
+      'Gunakan overview yang jelas dan data utama.',
+      'Bangun 2-3 paragraf body dengan contoh relevan.',
+      'Latih skimming, scanning, dan keyword matching.',
+      'Prediksi jawaban sebelum audio diputar.',
+      'Gunakan collocation dan sinonim bervariasi.',
+      'Prioritaskan subject-verb agreement dan tenses.',
+      'Task 2 menuntut register formal konsisten.',
+      'Jawab, beri alasan, lalu contoh konkret.',
+      'Pastikan antar kalimat terhubung logis.',
+      'Atur target harian: reading, listening, writing, speaking.',
+    ],
+    'Bahasa Spanyol': [
+      'Ser untuk identitas; estar untuk kondisi/lokasi.',
+      'Hafalkan pola yo/tú/él-nosotros-vosotros/ellos.',
+      'Gunakan flashcard dan spaced repetition.',
+      'Perhatikan maskulin/feminin serta singular/plural.',
+      'Letakkan "no" sebelum kata kerja utama.',
+      'Por = sebab/proses; para = tujuan/arah.',
+      'Mulai dari pola sederhana sebelum kalimat majemuk.',
+      'Adjektiva menyesuaikan noun yang dijelaskan.',
+      'Dengarkan podcast level A1-A2 secara rutin.',
+      'Gunakan struktur: me llamo..., soy de..., me gusta....',
     ],
   };
   const moduleHints = hints[moduleName] || hints['Matematika Simak UI'];
@@ -870,6 +1064,55 @@ const flashcardContent = {
     { front: 'Infinitive', back: 'Bentuk to+V1. Digunakan setelah certain verbs dan adj.' },
     { front: 'Comparative', back: 'Perbandingan. Adj+er/more+Adj+than' },
   ],
+
+  'UKMPPD': [
+    { front: 'ABCDE', back: 'Airway, Breathing, Circulation, Disability, Exposure: pendekatan awal pasien gawat darurat.' },
+    { front: 'Differential Diagnosis', back: 'Daftar kemungkinan diagnosis berdasarkan gejala dan tanda klinis.' },
+    { front: 'ST Elevation', back: 'Temuan EKG yang dapat menunjukkan infark miokard akut transmural.' },
+    { front: 'Sepsis Bundle', back: 'Intervensi awal sepsis: kultur, antibiotik dini, cairan, dan monitoring laktat.' },
+    { front: 'Evidence-Based Medicine', back: 'Integrasi bukti penelitian, pengalaman klinis, dan preferensi pasien.' },
+    { front: 'Antibiotic Stewardship', back: 'Penggunaan antibiotik rasional untuk menekan resistensi antimikroba.' },
+    { front: 'ACLS', back: 'Advanced Cardiovascular Life Support untuk tata laksana henti jantung.' },
+    { front: 'SOAP Note', back: 'Format dokumentasi: Subjective, Objective, Assessment, Plan.' },
+    { front: 'Informed Consent', back: 'Persetujuan tindakan medis setelah pasien mendapat informasi lengkap.' },
+    { front: 'Red Flag Symptoms', back: 'Tanda bahaya yang memerlukan evaluasi dan tindakan segera.' },
+  ],
+  'TPA Bappenas': [
+    { front: 'Sinonim', back: 'Kata dengan makna sama atau sangat mirip.' },
+    { front: 'Antonim', back: 'Kata dengan makna berlawanan.' },
+    { front: 'Deret Aritmetika', back: 'Pola bilangan dengan beda tetap antar suku.' },
+    { front: 'Deret Geometri', back: 'Pola bilangan dengan rasio tetap antar suku.' },
+    { front: 'Silogisme', back: 'Penarikan kesimpulan logis dari dua premis.' },
+    { front: 'Analogi Verbal', back: 'Hubungan makna antar pasangan kata.' },
+    { front: 'Skimming', back: 'Membaca cepat untuk menangkap gagasan utama.' },
+    { front: 'Scanning', back: 'Membaca cepat untuk menemukan informasi spesifik.' },
+    { front: 'Estimasi', back: 'Perkiraan nilai untuk mempercepat perhitungan.' },
+    { front: 'Eliminasi Opsi', back: 'Menyisihkan pilihan jelas salah untuk meningkatkan peluang benar.' },
+  ],
+  'IELTS': [
+    { front: 'Coherence', back: 'Keterpaduan ide agar tulisan/pembicaraan mudah diikuti.' },
+    { front: 'Cohesion', back: 'Penggunaan kata hubung agar antar kalimat saling terikat.' },
+    { front: 'Lexical Resource', back: 'Rentang dan ketepatan kosakata yang digunakan.' },
+    { front: 'Task Response', back: 'Seberapa lengkap jawaban memenuhi tuntutan soal writing.' },
+    { front: 'Band Descriptor', back: 'Kriteria penilaian resmi IELTS untuk tiap band score.' },
+    { front: 'Paraphrase', back: 'Menyampaikan makna sama dengan struktur/kata berbeda.' },
+    { front: 'Skimming', back: 'Teknik membaca cepat untuk overview teks reading.' },
+    { front: 'Keyword Matching', back: 'Mencocokkan kata kunci soal dengan informasi di teks/audio.' },
+    { front: 'Signposting', back: 'Frasa penanda alur seperti firstly, however, in conclusion.' },
+    { front: 'Fluency', back: 'Kelancaran berbicara dengan jeda alami dan minim ragu.' },
+  ],
+  'Bahasa Spanyol': [
+    { front: 'Ser', back: 'Kata kerja untuk identitas, karakteristik, dan asal.' },
+    { front: 'Estar', back: 'Kata kerja untuk kondisi sementara dan lokasi.' },
+    { front: 'Hola', back: 'Sapaan: halo.' },
+    { front: 'Gracias', back: 'Ucapan terima kasih.' },
+    { front: 'Por favor', back: 'Ucapan tolong/silakan.' },
+    { front: 'Buenos días', back: 'Sapaan selamat pagi.' },
+    { front: 'Buenas tardes', back: 'Sapaan selamat siang/sore.' },
+    { front: 'Buenas noches', back: 'Sapaan selamat malam.' },
+    { front: '¿Cómo estás?', back: 'Pertanyaan: apa kabar?' },
+    { front: 'Me llamo...', back: 'Ekspresi: nama saya ...' },
+  ],
 };
 
 const createFlashcard = (moduleName, index) => {
@@ -891,7 +1134,7 @@ const buildQuestionBank = () => {
   const flashcards = [];
 
   moduleConfigs.forEach((module) => {
-    for (let i = 0; i < QUESTION_COUNT_PER_MODULE; i += 1) {
+    for (let i = 0; i < (module.questionCount || DEFAULT_QUESTION_COUNT_PER_MODULE); i += 1) {
       mcq.push(createMcqQuestion(module.name, i));
       essay.push(createEssayQuestion(module.name, i));
       flashcards.push(createFlashcard(module.name, i));
@@ -956,6 +1199,7 @@ function App() {
     () => moduleConfigs.find((item) => item.name === state.selectedModule),
     [state.selectedModule],
   );
+  const moduleQuestionCount = moduleMeta?.questionCount || DEFAULT_QUESTION_COUNT_PER_MODULE;
 
   const filteredItems = useMemo(() => {
     const list = questionBank[state.selectedType] || [];
@@ -1179,7 +1423,7 @@ function App() {
       <div className="layout">
         <aside className="sidebar">
           <h1>Sobri Practice Hub</h1>
-          <p className="subtle">{QUESTION_COUNT_PER_MODULE} soal per modul • responsif • autosave</p>
+          <p className="subtle">{moduleQuestionCount} soal pada modul aktif • responsif • autosave</p>
           <div className="menu-group">
             {moduleConfigs.map((module) => (
               <button
@@ -1238,12 +1482,12 @@ function App() {
           <section className="stats-grid">
             <article className="stat-card">
               <span>Total Soal</span>
-              <strong>{QUESTION_COUNT_PER_MODULE}</strong>
+              <strong>{moduleQuestionCount}</strong>
             </article>
             <article className="stat-card">
               <span>MCQ Terjawab</span>
               <strong>
-                {answeredCount}/{QUESTION_COUNT_PER_MODULE}
+                {answeredCount}/{moduleQuestionCount}
               </strong>
             </article>
             <article className="stat-card">
@@ -1256,11 +1500,11 @@ function App() {
             </article>
             <article className="stat-card">
               <span>Essai Terisi</span>
-              <strong>{essayAnsweredCount}/{QUESTION_COUNT_PER_MODULE}</strong>
+              <strong>{essayAnsweredCount}/{moduleQuestionCount}</strong>
             </article>
             <article className="stat-card">
               <span>Flashcard Dikuasai</span>
-              <strong>{masteredFlashcardsCount}/{QUESTION_COUNT_PER_MODULE}</strong>
+              <strong>{masteredFlashcardsCount}/{moduleQuestionCount}</strong>
             </article>
           </section>
 
