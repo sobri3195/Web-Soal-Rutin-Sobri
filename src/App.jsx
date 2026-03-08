@@ -1147,6 +1147,8 @@ const buildQuestionBank = () => {
 const questionBank = buildQuestionBank();
 
 const STORAGE_KEY = 'sobri-practice-state-v3';
+const VALID_TYPES = ['mcq', 'essay', 'flashcards'];
+const VALID_MCQ_FILTERS = ['all', 'unanswered', 'correct', 'wrong'];
 
 const initialState = {
   selectedModule: modules[0],
@@ -1194,6 +1196,49 @@ function App() {
   }, [toast]);
 
   const updateState = (next) => setState((prev) => ({ ...prev, ...next }));
+
+  const sanitizeImportedState = (snapshot = {}) => {
+    const safe = { ...initialState };
+
+    if (typeof snapshot.selectedModule === 'string' && modules.includes(snapshot.selectedModule)) {
+      safe.selectedModule = snapshot.selectedModule;
+    }
+    if (typeof snapshot.selectedType === 'string' && VALID_TYPES.includes(snapshot.selectedType)) {
+      safe.selectedType = snapshot.selectedType;
+    }
+    if (snapshot.mcqAnswers && typeof snapshot.mcqAnswers === 'object') {
+      safe.mcqAnswers = snapshot.mcqAnswers;
+    }
+    if (snapshot.mcqShowExplanation && typeof snapshot.mcqShowExplanation === 'object') {
+      safe.mcqShowExplanation = snapshot.mcqShowExplanation;
+    }
+    if (snapshot.essayAnswers && typeof snapshot.essayAnswers === 'object') {
+      safe.essayAnswers = snapshot.essayAnswers;
+    }
+    if (snapshot.flashcardFlips && typeof snapshot.flashcardFlips === 'object') {
+      safe.flashcardFlips = snapshot.flashcardFlips;
+    }
+    if (snapshot.masteredFlashcards && typeof snapshot.masteredFlashcards === 'object') {
+      safe.masteredFlashcards = snapshot.masteredFlashcards;
+    }
+    if (typeof snapshot.query === 'string') {
+      safe.query = snapshot.query;
+    }
+    if (typeof snapshot.page === 'number' && Number.isFinite(snapshot.page) && snapshot.page > 0) {
+      safe.page = Math.floor(snapshot.page);
+    }
+    if (typeof snapshot.mcqFilter === 'string' && VALID_MCQ_FILTERS.includes(snapshot.mcqFilter)) {
+      safe.mcqFilter = snapshot.mcqFilter;
+    }
+    if (typeof snapshot.showMasteredFlashcards === 'boolean') {
+      safe.showMasteredFlashcards = snapshot.showMasteredFlashcards;
+    }
+    if (typeof snapshot.darkMode === 'boolean') {
+      safe.darkMode = snapshot.darkMode;
+    }
+
+    return safe;
+  };
 
   const moduleMeta = useMemo(
     () => moduleConfigs.find((item) => item.name === state.selectedModule),
@@ -1257,7 +1302,7 @@ function App() {
 
   const answeredCount = moduleMcq.filter((q) => state.mcqAnswers[q.id]).length;
   const correctCount = moduleMcq.filter((q) => state.mcqAnswers[q.id] === q.answer).length;
-  const progressPercent = Math.round((answeredCount / moduleMcq.length) * 100);
+  const progressPercent = moduleMcq.length > 0 ? Math.round((answeredCount / moduleMcq.length) * 100) : 0;
   const essayAnsweredCount = moduleEssay.filter((q) => (state.essayAnswers[q.id] || '').trim()).length;
   const masteredFlashcardsCount = moduleFlashcards.filter((q) => state.masteredFlashcards[q.id]).length;
 
@@ -1290,6 +1335,7 @@ function App() {
         delete nextExplanations[q.id];
       });
       updateState({ mcqAnswers: nextAnswers, mcqShowExplanation: nextExplanations });
+      setToast('Progress MCQ modul aktif berhasil direset.');
       return;
     }
 
@@ -1299,6 +1345,7 @@ function App() {
         .filter((q) => q.module === state.selectedModule)
         .forEach((q) => delete nextAnswers[q.id]);
       updateState({ essayAnswers: nextAnswers });
+      setToast('Jawaban essai modul aktif berhasil direset.');
       return;
     }
 
@@ -1311,6 +1358,41 @@ function App() {
         delete nextMastered[q.id];
       });
     updateState({ flashcardFlips: nextFlips, masteredFlashcards: nextMastered });
+    setToast('Progress flashcard modul aktif berhasil direset.');
+  };
+
+  const resetModuleProgress = () => {
+    const moduleQuestionIds = new Set(
+      questionBank.mcq.filter((q) => q.module === state.selectedModule).map((q) => q.id),
+    );
+    const moduleEssayIds = new Set(
+      questionBank.essay.filter((q) => q.module === state.selectedModule).map((q) => q.id),
+    );
+    const moduleFlashcardIds = new Set(
+      questionBank.flashcards.filter((q) => q.module === state.selectedModule).map((q) => q.id),
+    );
+
+    const filteredObject = (source, idSet) => Object.fromEntries(
+      Object.entries(source).filter(([key]) => !idSet.has(key)),
+    );
+
+    updateState({
+      mcqAnswers: filteredObject(state.mcqAnswers, moduleQuestionIds),
+      mcqShowExplanation: filteredObject(state.mcqShowExplanation, moduleQuestionIds),
+      essayAnswers: filteredObject(state.essayAnswers, moduleEssayIds),
+      flashcardFlips: filteredObject(state.flashcardFlips, moduleFlashcardIds),
+      masteredFlashcards: filteredObject(state.masteredFlashcards, moduleFlashcardIds),
+      page: 1,
+      query: '',
+      mcqFilter: 'all',
+    });
+    setToast(`Semua progress di modul ${state.selectedModule} sudah direset.`);
+  };
+
+  const resetAllProgress = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    setState(initialState);
+    setToast('Semua progress berhasil dihapus dan aplikasi direset.');
   };
 
   const toggleExplanation = (questionId) => {
@@ -1387,27 +1469,7 @@ function App() {
         throw new Error('Invalid file format');
       }
 
-      const allowedKeys = [
-        'selectedModule',
-        'selectedType',
-        'mcqAnswers',
-        'mcqShowExplanation',
-        'essayAnswers',
-        'flashcardFlips',
-        'masteredFlashcards',
-        'query',
-        'page',
-        'mcqFilter',
-        'showMasteredFlashcards',
-        'darkMode',
-      ];
-
-      const safeData = { ...initialState };
-      allowedKeys.forEach((key) => {
-        if (key in parsed.stateSnapshot) {
-          safeData[key] = parsed.stateSnapshot[key];
-        }
-      });
+      const safeData = sanitizeImportedState(parsed.stateSnapshot);
 
       setState((prev) => ({ ...prev, ...safeData }));
       setToast('Progress berhasil di-import.');
@@ -1453,6 +1515,9 @@ function App() {
             <button className="ghost" onClick={triggerImportProgress}>
               📥 Import Progress
             </button>
+            <button className="ghost danger" onClick={resetAllProgress}>
+              ♻️ Reset Semua Progress
+            </button>
           </div>
         </aside>
 
@@ -1487,7 +1552,7 @@ function App() {
             <article className="stat-card">
               <span>MCQ Terjawab</span>
               <strong>
-                {answeredCount}/{moduleQuestionCount}
+                {answeredCount}/{moduleMcq.length}
               </strong>
             </article>
             <article className="stat-card">
@@ -1500,11 +1565,11 @@ function App() {
             </article>
             <article className="stat-card">
               <span>Essai Terisi</span>
-              <strong>{essayAnsweredCount}/{moduleQuestionCount}</strong>
+              <strong>{essayAnsweredCount}/{moduleEssay.length}</strong>
             </article>
             <article className="stat-card">
               <span>Flashcard Dikuasai</span>
-              <strong>{masteredFlashcardsCount}/{moduleQuestionCount}</strong>
+              <strong>{masteredFlashcardsCount}/{moduleFlashcards.length}</strong>
             </article>
           </section>
 
@@ -1548,6 +1613,7 @@ function App() {
             {state.selectedType === 'mcq' && (
               <button className="ghost" onClick={jumpToFirstUnanswered}>➡️ Lanjut soal belum dijawab</button>
             )}
+            <button className="ghost danger" onClick={resetModuleProgress}>♻️ Reset modul aktif</button>
             <button className="ghost danger" onClick={resetCurrentType}>🗑️ Reset data</button>
           </section>
 
