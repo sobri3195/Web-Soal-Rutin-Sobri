@@ -6,7 +6,7 @@ const moduleConfigs = [
   { name: 'Tes Potensi Akademik', tag: 'Verbal & Logika', questionCount: 200 },
   { name: 'Soal Onkologi Radiasi', tag: 'Konsep Medis', questionCount: 200 },
   { name: 'Soal Toefl', tag: 'English Mastery', questionCount: 200 },
-  { name: 'UKMPPD', tag: 'Clinical Reasoning', questionCount: 100 },
+  { name: 'UKMPPD', tag: 'Semua Stase Kedokteran', questionCount: 150 },
   { name: 'TPA Bappenas', tag: 'Verbal, Numerik & Logika', questionCount: 100 },
   { name: 'IELTS', tag: 'Academic English', questionCount: 100 },
   { name: 'Bahasa Spanyol', tag: 'Español Básico', questionCount: 100 },
@@ -726,6 +726,200 @@ const createSpanishQuestion = (moduleName, index) => {
   };
 };
 
+
+const createUkmppdQuestion = (moduleName, index) => {
+  const n = index + 1;
+  const baseSeed = hashString(moduleName) + n * 997;
+
+  const staseBlueprints = [
+    {
+      stase: 'Penyakit Dalam',
+      prompt: 'Laki-laki 58 tahun DM tipe 2 datang dengan nyeri dada 2 jam, EKG elevasi ST II, III, aVF. Terapi awal paling tepat di IGD adalah?',
+      answer: 'Aspirin kunyah + P2Y12 inhibitor + rujuk reperfusi segera',
+      options: [
+        'Aspirin kunyah + P2Y12 inhibitor + rujuk reperfusi segera',
+        'Nitrat sublingual saja lalu observasi 24 jam',
+        'Heparin profilaksis tanpa antiplatelet',
+        'Tunda terapi hingga hasil troponin serial 6 jam',
+      ],
+      explanation: 'Gambaran STEMI inferior membutuhkan terapi anti-platelet ganda dan strategi reperfusi sesegera mungkin sesuai jejaring layanan jantung akut.',
+    },
+    {
+      stase: 'Bedah',
+      prompt: 'Pasien trauma abdomen dengan hipotensi persisten, FAST positif cairan bebas intraperitoneal. Langkah berikut yang paling tepat adalah?',
+      answer: 'Resusitasi damage control dan laparotomi emergensi',
+      options: [
+        'Resusitasi damage control dan laparotomi emergensi',
+        'CT-scan abdomen kontras sebelum tindakan',
+        'Observasi ketat sambil menunggu Hb ulang',
+        'Analgesik opioid dan rawat jalan',
+      ],
+      explanation: 'Trauma abdomen tidak stabil dengan FAST positif adalah indikasi eksplorasi bedah segera bersamaan dengan protokol resusitasi.',
+    },
+    {
+      stase: 'Anak',
+      prompt: 'Anak 2 tahun diare akut dengan mata cekung, turgor kembali lambat, masih bisa minum. Klasifikasi dan tata laksana awal yang benar?',
+      answer: 'Dehidrasi ringan-sedang, rehidrasi oralit rencana B',
+      options: [
+        'Dehidrasi ringan-sedang, rehidrasi oralit rencana B',
+        'Syok hipovolemik, bolus 20 ml/kg berulang segera',
+        'Tanpa dehidrasi, cukup zinc tanpa cairan',
+        'Dehidrasi berat, cairan rumatan intravena saja',
+      ],
+      explanation: 'Tanda klinis sesuai dehidrasi ringan-sedang sehingga rencana B WHO/MTBS dengan oralit terukur menjadi pilihan awal.',
+    },
+    {
+      stase: 'Obstetri',
+      prompt: 'Ibu hamil 34 minggu dengan tekanan darah 170/110 mmHg, nyeri kepala, proteinuria +2. Terapi awal yang diprioritaskan?',
+      answer: 'Stabilisasi preeklamsia berat dengan MgSO4 dan antihipertensi',
+      options: [
+        'Stabilisasi preeklamsia berat dengan MgSO4 dan antihipertensi',
+        'Observasi tanpa obat hingga usia kehamilan aterm',
+        'Berikan tokolitik untuk menunda persalinan 2 minggu',
+        'Diuretik dosis tinggi sebagai terapi tunggal',
+      ],
+      explanation: 'Preeklamsia berat memerlukan pencegahan kejang dengan magnesium sulfat dan kontrol tekanan darah sebelum terminasi kehamilan sesuai indikasi.',
+    },
+    {
+      stase: 'Ginekologi',
+      prompt: 'Perempuan 28 tahun nyeri perut bawah, demam, nyeri goyang serviks, keputihan purulen. Diagnosis kerja paling mungkin?',
+      answer: 'Penyakit radang panggul (PID)',
+      options: [
+        'Penyakit radang panggul (PID)',
+        'Kista ovarium fungsional tanpa komplikasi',
+        'Dismenore primer',
+        'Endometriosis stadium awal tanpa inflamasi',
+      ],
+      explanation: 'Trias nyeri pelvis, demam, dan nyeri goyang serviks sangat mengarah ke PID dan perlu antibiotik spektrum luas serta evaluasi IMS.',
+    },
+    {
+      stase: 'Neurologi',
+      prompt: 'Pasien 64 tahun datang 90 menit sejak onset hemiparesis kanan dan afasia, CT-scan tanpa perdarahan. Tatalaksana definitif paling sesuai?',
+      answer: 'Evaluasi kelayakan trombolisis intravena segera',
+      options: [
+        'Evaluasi kelayakan trombolisis intravena segera',
+        'Berikan aspirin dosis loading lalu pulang',
+        'Tunda terapi hingga 24 jam untuk observasi',
+        'Berikan manitol rutin pada semua stroke iskemik',
+      ],
+      explanation: 'Stroke iskemik onset <4,5 jam tanpa perdarahan perlu skrining kontraindikasi untuk trombolisis sesegera mungkin.',
+    },
+    {
+      stase: 'Psikiatri',
+      prompt: 'Pria 24 tahun halusinasi auditorik >6 bulan, waham kejar, fungsi sosial menurun, tanpa gangguan mood dominan. Diagnosis paling mungkin?',
+      answer: 'Skizofrenia',
+      options: ['Skizofrenia', 'Gangguan bipolar episode manik', 'Gangguan skizoafektif tipe depresif', 'Gangguan cemas menyeluruh'],
+      explanation: 'Durasi >6 bulan dengan gejala psikotik khas dan disfungsi sosial menegakkan skizofrenia.',
+    },
+    {
+      stase: 'Kulit dan Kelamin',
+      prompt: 'Lesi vesikel berkelompok nyeri di dasar eritem pada dermatom torakal unilateral. Terapi lini pertama?',
+      answer: 'Antivirus oral (asiklovir/valasiklovir) sedini mungkin',
+      options: [
+        'Antivirus oral (asiklovir/valasiklovir) sedini mungkin',
+        'Antijamur topikal selama 2 minggu',
+        'Antibiotik penisilin intramuskular dosis tunggal',
+        'Kortikosteroid topikal potensi tinggi sebagai monoterapi',
+      ],
+      explanation: 'Gambaran klinis herpes zoster; antiviral dini mengurangi durasi gejala dan risiko neuralgia pascaherpetik.',
+    },
+    {
+      stase: 'THT',
+      prompt: 'Anak 6 tahun demam tinggi, nyeri telinga, membran timpani hiperemis menonjol. Diagnosis dan terapi awal?',
+      answer: 'Otitis media akut, analgesik + amoksisilin sesuai indikasi',
+      options: [
+        'Otitis media akut, analgesik + amoksisilin sesuai indikasi',
+        'Otitis eksterna, tetes antijamur',
+        'Serumen obturans, irigasi rutin tanpa evaluasi',
+        'Mastoiditis, observasi di rumah',
+      ],
+      explanation: 'Otitis media akut ditandai inflamasi telinga tengah; terapi nyeri dan antibiotik pada kondisi terpilih merupakan standar.',
+    },
+    {
+      stase: 'Mata',
+      prompt: 'Pasien mata merah nyeri hebat, melihat halo, mual muntah, pupil mid-dilatasi, TIO meningkat. Diagnosis paling mungkin?',
+      answer: 'Glaukoma sudut tertutup akut',
+      options: [
+        'Glaukoma sudut tertutup akut',
+        'Konjungtivitis viral',
+        'Blefaritis anterior',
+        'Ulkus kornea superfisial tanpa komplikasi',
+      ],
+      explanation: 'Gejala khas glaukoma akut adalah nyeri berat, halo, mual, dan tekanan intraokular tinggi, membutuhkan rujukan emergensi.',
+    },
+    {
+      stase: 'Ortopedi',
+      prompt: 'Cedera pergelangan kaki inversi, nyeri pada maleolus lateral dan tidak mampu menapak. Kriteria Ottawa mengarah pada?',
+      answer: 'Perlu foto rontgen untuk menyingkirkan fraktur',
+      options: [
+        'Perlu foto rontgen untuk menyingkirkan fraktur',
+        'Cukup kompres hangat tanpa imobilisasi',
+        'Tidak perlu evaluasi lanjutan karena sprain ringan',
+        'Langsung fisioterapi intensif hari pertama',
+      ],
+      explanation: 'Nyeri maleolus dan ketidakmampuan menapak memenuhi Ottawa ankle rules untuk indikasi radiografi.',
+    },
+    {
+      stase: 'Anestesi',
+      prompt: 'Pra-operasi pasien ASA III dengan riwayat PPOK. Tujuan utama evaluasi pra-anestesi adalah?',
+      answer: 'Menilai risiko perioperatif dan optimasi komorbid sebelum operasi',
+      options: [
+        'Menilai risiko perioperatif dan optimasi komorbid sebelum operasi',
+        'Menentukan jenis jahitan luka operasi',
+        'Menggantikan informed consent operator',
+        'Memastikan pasien puasa tanpa menilai status klinis',
+      ],
+      explanation: 'Pra-anestesi berfokus pada stratifikasi risiko, perencanaan teknik anestesi, dan optimasi kondisi pasien.',
+    },
+    {
+      stase: 'Radiologi',
+      prompt: 'Pasien trauma kepala GCS 11, muntah berulang. Modalitas pencitraan awal paling tepat?',
+      answer: 'CT-scan kepala non-kontras segera',
+      options: [
+        'CT-scan kepala non-kontras segera',
+        'MRI kepala dengan kontras sebagai pilihan awal',
+        'Foto polos tengkorak AP-lateral saja',
+        'USG transkranial rutin',
+      ],
+      explanation: 'Pada trauma kepala akut sedang, CT non-kontras adalah modalitas cepat untuk deteksi perdarahan intrakranial.',
+    },
+    {
+      stase: 'Kedokteran Komunitas',
+      prompt: 'Puskesmas menemukan peningkatan kasus DBD di satu kelurahan selama 3 minggu. Langkah epidemiologi pertama?',
+      answer: 'Verifikasi diagnosis dan konfirmasi adanya KLB',
+      options: [
+        'Verifikasi diagnosis dan konfirmasi adanya KLB',
+        'Langsung fogging seluruh kota tanpa investigasi',
+        'Menutup puskesmas sementara',
+        'Menghentikan pencatatan surveilans mingguan',
+      ],
+      explanation: 'Investigasi wabah dimulai dari verifikasi diagnosis dan memastikan benar terjadi peningkatan kasus bermakna (KLB).',
+    },
+    {
+      stase: 'Forensik dan Medikolegal',
+      prompt: 'Dokter IGD menerima permintaan visum korban kekerasan hidup dari kepolisian. Dokumen yang harus dibuat adalah?',
+      answer: 'Visum et repertum sesuai temuan objektif medis',
+      options: [
+        'Visum et repertum sesuai temuan objektif medis',
+        'Surat kematian biasa tanpa pemeriksaan',
+        'Resume pulang pasien sebagai pengganti visum',
+        'Resep analgesik sebagai dokumen legal utama',
+      ],
+      explanation: 'Pada kasus hukum, dokter menyusun visum et repertum berdasarkan pemeriksaan objektif dan prosedur medikolegal.',
+    },
+  ];
+
+  const item = staseBlueprints[index % staseBlueprints.length];
+  return {
+    id: `mcq-${moduleName}-${n}`,
+    module: moduleName,
+    prompt: `[Stase ${item.stase}] ${item.prompt}`,
+    answer: item.answer,
+    explanation: item.explanation,
+    options: shuffleDeterministic(item.options, baseSeed),
+  };
+};
+
 // ===== FACTORY FUNCTION =====
 const createMcqQuestion = (moduleName, index) => {
   switch (moduleName) {
@@ -740,7 +934,7 @@ const createMcqQuestion = (moduleName, index) => {
     case 'Soal Toefl':
       return createToeflQuestion(moduleName, index);
     case 'UKMPPD':
-      return createOncologyQuestion(moduleName, index);
+      return createUkmppdQuestion(moduleName, index);
     case 'TPA Bappenas':
       return createTpaQuestion(moduleName, index);
     case 'IELTS':
@@ -816,16 +1010,20 @@ const essayPrompts = {
   ],
 
   'UKMPPD': [
-    'Jelaskan pendekatan klinis untuk menangani pasien dengan sesak napas akut di IGD.',
-    'Bagaimana langkah diagnosis banding nyeri dada pada pelayanan primer?',
-    'Jelaskan interpretasi dasar hasil EKG pada infark miokard akut.',
-    'Apa prinsip tatalaksana awal pasien syok sepsis?',
-    'Bagaimana pendekatan evidence-based medicine dalam pengambilan keputusan klinis?',
-    'Jelaskan tata laksana hipertensi pada pasien dengan komorbid diabetes melitus.',
-    'Bagaimana melakukan edukasi pasien untuk meningkatkan kepatuhan minum obat?',
-    'Jelaskan algoritma penanganan henti jantung sesuai ACLS secara ringkas.',
-    'Apa prinsip rasional penggunaan antibiotik untuk mencegah resistensi?',
-    'Bagaimana menyusun rencana tindak lanjut pada pasien penyakit kronis?',
+    'Stase Penyakit Dalam: Jelaskan pendekatan diagnosis dan tatalaksana awal sindrom koroner akut di layanan primer dan rujukan.',
+    'Stase Bedah: Uraikan algoritma penilaian trauma (ATLS) pada pasien dengan kecurigaan perdarahan intraabdomen.',
+    'Stase Anak: Jelaskan tata laksana diare akut anak berbasis derajat dehidrasi dan edukasi oralit-zinc.',
+    'Stase Obstetri: Bahas diagnosis preeklamsia berat, stabilisasi ibu, dan indikasi terminasi kehamilan.',
+    'Stase Ginekologi: Jelaskan diagnosis penyakit radang panggul, antibiotik empiris, dan indikasi rawat inap.',
+    'Stase Neurologi: Uraikan alur penanganan stroke akut dari door-to-imaging hingga terapi reperfusi.',
+    'Stase Psikiatri: Jelaskan pendekatan biopsikososial pada pasien skizofrenia fase akut dan pemeliharaan.',
+    'Stase Kulit Kelamin: Bandingkan tatalaksana herpes zoster, impetigo, dan dermatitis kontak pada fasilitas primer.',
+    'Stase THT-Mata: Jelaskan red flags pada mata merah nyeri dan otalgia yang membutuhkan rujukan segera.',
+    'Stase Ortopedi-Rehabilitasi: Bahas evaluasi cedera muskuloskeletal akut menggunakan Ottawa rules dan prinsip RICE.',
+    'Stase Anestesi: Jelaskan penilaian pra-anestesi, klasifikasi ASA, serta optimasi komorbid sebelum operasi.',
+    'Stase Radiologi: Uraikan indikasi pemilihan CT, MRI, dan USG berdasarkan pertanyaan klinis kasus gawat darurat.',
+    'Stase Kedokteran Komunitas: Jelaskan langkah investigasi KLB DBD dari verifikasi diagnosis sampai intervensi populasi.',
+    'Stase Forensik: Jelaskan tata cara pembuatan visum et repertum pada korban hidup sesuai etika dan hukum Indonesia.',
   ],
   'TPA Bappenas': [
     'Jelaskan strategi menyelesaikan soal sinonim dan antonim dengan cepat.',
@@ -940,16 +1138,20 @@ const getEssayHint = (moduleName, promptIndex) => {
       'Baca kontekstual dan buat word map.',
     ],
     'UKMPPD': [
-      'Mulai dari ABCDE dan stabilisasi pasien.',
-      'Kelompokkan penyebab kardiak vs non-kardiak.',
-      'Perhatikan elevasi ST, depresi ST, dan inversi T.',
-      'Ikuti bundle sepsis: cairan, kultur, antibiotik dini.',
-      'Gunakan PICO dan nilai kualitas bukti.',
-      'Sesuaikan target tekanan darah dan risiko kardiovaskular.',
-      'Gunakan komunikasi empatik dan teach-back.',
-      'Ingat urutan CPR, defibrilasi, airway, obat.',
-      'Pertimbangkan indikasi, spektrum, dan durasi terapi.',
-      'Tentukan jadwal kontrol dan parameter monitoring.',
+      'Tulis urutan stabilisasi, antiplatelet, antikoagulan, dan strategi reperfusi.',
+      'Gunakan kerangka primary survey, FAST, dan keputusan laparotomi.',
+      'Cantumkan klasifikasi dehidrasi, volume oralit, zinc, serta tanda bahaya.',
+      'Sebutkan kriteria berat, regimen MgSO4, kontrol tekanan darah, dan timing terminasi.',
+      'Jabarkan kriteria klinis PID, pilihan antibiotik, serta follow-up pasangan.',
+      'Susun target waktu door-to-CT dan syarat trombolisis/trombektomi.',
+      'Bedakan gejala positif-negatif, fase terapi, dan dukungan keluarga.',
+      'Buat tabel diagnosis banding lesi kulit infeksius dan antiinfeksi yang tepat.',
+      'Sebutkan gejala red flag, terapi awal, dan kriteria rujukan emergensi.',
+      'Tuliskan indikasi imaging, imobilisasi, analgesia, dan rencana rehabilitasi awal.',
+      'Jelaskan komponen evaluasi airway, risiko ASA, dan informed consent anestesi.',
+      'Hubungkan modality choice dengan kecepatan, sensitivitas, dan keamanan pasien.',
+      'Gunakan langkah epidemiologi: verifikasi, definisi kasus, epi curve, intervensi.',
+      'Tekankan objektivitas temuan, chain of custody, dan kerahasiaan medis.',
     ],
     'TPA Bappenas': [
       'Gunakan konteks kata dan eliminasi opsi.',
@@ -1066,16 +1268,21 @@ const flashcardContent = {
   ],
 
   'UKMPPD': [
-    { front: 'ABCDE', back: 'Airway, Breathing, Circulation, Disability, Exposure: pendekatan awal pasien gawat darurat.' },
-    { front: 'Differential Diagnosis', back: 'Daftar kemungkinan diagnosis berdasarkan gejala dan tanda klinis.' },
-    { front: 'ST Elevation', back: 'Temuan EKG yang dapat menunjukkan infark miokard akut transmural.' },
-    { front: 'Sepsis Bundle', back: 'Intervensi awal sepsis: kultur, antibiotik dini, cairan, dan monitoring laktat.' },
-    { front: 'Evidence-Based Medicine', back: 'Integrasi bukti penelitian, pengalaman klinis, dan preferensi pasien.' },
-    { front: 'Antibiotic Stewardship', back: 'Penggunaan antibiotik rasional untuk menekan resistensi antimikroba.' },
-    { front: 'ACLS', back: 'Advanced Cardiovascular Life Support untuk tata laksana henti jantung.' },
-    { front: 'SOAP Note', back: 'Format dokumentasi: Subjective, Objective, Assessment, Plan.' },
-    { front: 'Informed Consent', back: 'Persetujuan tindakan medis setelah pasien mendapat informasi lengkap.' },
-    { front: 'Red Flag Symptoms', back: 'Tanda bahaya yang memerlukan evaluasi dan tindakan segera.' },
+    { front: 'Penyakit Dalam - STEMI', back: 'ST elevasi kontigu + gejala iskemik: berikan DAPT, antikoagulan, dan reperfusi segera sesuai jejaring.' },
+    { front: 'Bedah - Trauma Abdomen', back: 'Pasien tidak stabil + FAST positif adalah indikasi laparotomi emergensi (damage control surgery).' },
+    { front: 'Anak - Diare Akut', back: 'Klasifikasikan dehidrasi, rehidrasi oral/intravena sesuai derajat, tambah zinc 10-14 hari.' },
+    { front: 'Obstetri - Preeklamsia Berat', back: 'TD ≥160/110 dengan tanda berat: MgSO4, antihipertensi, monitor ibu-janin, rencanakan terminasi.' },
+    { front: 'Ginekologi - PID', back: 'Nyeri pelvis + nyeri goyang serviks + keputihan: antibiotik empiris spektrum luas dan skrining IMS.' },
+    { front: 'Neurologi - Stroke Akut', back: 'Prinsip time is brain: CT non-kontras cepat, tentukan kandidat trombolisis/trombektomi.' },
+    { front: 'Psikiatri - Skizofrenia', back: 'Gejala psikotik >6 bulan dengan disfungsi: antipsikotik, psikososial, dan follow-up jangka panjang.' },
+    { front: 'Kulit Kelamin - Herpes Zoster', back: 'Vesikel dermatomal nyeri: antiviral dini dan kontrol nyeri untuk cegah neuralgia pascaherpetik.' },
+    { front: 'THT - Otitis Media Akut', back: 'Membran timpani hiperemis menonjol: analgesia adekuat, antibiotik bila indikasi klinis terpenuhi.' },
+    { front: 'Mata - Glaukoma Akut', back: 'Mata merah nyeri + halo + mual + TIO tinggi adalah emergensi oftalmologi.' },
+    { front: 'Ortopedi - Ottawa Rules', back: 'Nyeri maleolus + tidak mampu menapak menandakan kebutuhan rontgen untuk menyingkirkan fraktur.' },
+    { front: 'Anestesi - Klasifikasi ASA', back: 'ASA menilai status fisik praoperatif untuk memperkirakan risiko anestesi perioperatif.' },
+    { front: 'Radiologi - CT Kepala', back: 'Trauma kepala akut dengan red flag neurologis: CT non-kontras adalah modalitas awal utama.' },
+    { front: 'Komunitas - Investigasi KLB', back: 'Mulai dari verifikasi diagnosis, definisi kasus, epi curve, hingga intervensi dan komunikasi risiko.' },
+    { front: 'Forensik - Visum et Repertum', back: 'Dokumen medikolegal objektif yang dibuat dokter atas permintaan penyidik untuk pembuktian hukum.' },
   ],
   'TPA Bappenas': [
     { front: 'Sinonim', back: 'Kata dengan makna sama atau sangat mirip.' },
