@@ -1376,33 +1376,7 @@ function App() {
   const [state, setState] = useState(initialState);
   const [toast, setToast] = useState('');
   const importInputRef = useRef(null);
-
-  useEffect(() => {
-    const savedState = localStorage.getItem(STORAGE_KEY);
-    if (!savedState) return;
-    try {
-      const parsed = JSON.parse(savedState);
-      setState((prev) => ({ ...initialState, ...parsed }));
-    } catch {
-      setState(initialState);
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [state]);
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', state.darkMode ? 'dark' : 'light');
-  }, [state.darkMode]);
-
-  useEffect(() => {
-    if (!toast) return undefined;
-    const timer = setTimeout(() => setToast(''), 2300);
-    return () => clearTimeout(timer);
-  }, [toast]);
-
-  const updateState = (next) => setState((prev) => ({ ...prev, ...next }));
+  const searchInputRef = useRef(null);
 
   const sanitizeImportedState = (snapshot = {}) => {
     const safe = { ...initialState };
@@ -1446,6 +1420,34 @@ function App() {
 
     return safe;
   };
+
+  useEffect(() => {
+    const savedState = localStorage.getItem(STORAGE_KEY);
+    if (!savedState) return;
+    try {
+      const parsed = JSON.parse(savedState);
+      const safeParsed = sanitizeImportedState(parsed);
+      setState(safeParsed);
+    } catch {
+      setState(initialState);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }, [state]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', state.darkMode ? 'dark' : 'light');
+  }, [state.darkMode]);
+
+  useEffect(() => {
+    if (!toast) return undefined;
+    const timer = setTimeout(() => setToast(''), 2300);
+    return () => clearTimeout(timer);
+  }, [toast]);
+
+  const updateState = (next) => setState((prev) => ({ ...prev, ...next }));
 
   const moduleMeta = useMemo(
     () => moduleConfigs.find((item) => item.name === state.selectedModule),
@@ -1515,6 +1517,18 @@ function App() {
 
   // Calculate accuracy rate
   const accuracyRate = answeredCount > 0 ? Math.round((correctCount / answeredCount) * 100) : 0;
+  const remainingMcqCount = moduleMcq.length - answeredCount;
+
+  const moduleCompletionMap = useMemo(() => {
+    return moduleConfigs.reduce((acc, module) => {
+      const moduleQuestions = questionBank.mcq.filter((item) => item.module === module.name);
+      const moduleAnswered = moduleQuestions.filter((item) => state.mcqAnswers[item.id]).length;
+      acc[module.name] = moduleQuestions.length
+        ? Math.round((moduleAnswered / moduleQuestions.length) * 100)
+        : 0;
+      return acc;
+    }, {});
+  }, [state.mcqAnswers]);
 
   const jumpToRandomQuestion = () => {
     if (!displayItems.length) return;
@@ -1532,6 +1546,46 @@ function App() {
     updateState({ mcqFilter: 'all', page: Math.floor(firstUnansweredIndex / PAGE_SIZE) + 1 });
     setToast(`Lanjut ke soal MCQ #${firstUnansweredIndex + 1}`);
   };
+
+  const jumpToFirstWrong = () => {
+    if (state.selectedType !== 'mcq') return;
+    const firstWrongIndex = moduleMcq.findIndex((q) => {
+      const answer = state.mcqAnswers[q.id];
+      return answer && answer !== q.answer;
+    });
+    if (firstWrongIndex === -1) {
+      setToast('Belum ada jawaban salah di modul ini. Keren! ✨');
+      return;
+    }
+    updateState({ mcqFilter: 'wrong', page: Math.floor(firstWrongIndex / PAGE_SIZE) + 1 });
+    setToast(`Review soal salah dimulai dari #${firstWrongIndex + 1}`);
+  };
+
+  useEffect(() => {
+    const onKeydown = (event) => {
+      const targetTag = event.target?.tagName;
+      const isTyping = targetTag === 'INPUT' || targetTag === 'TEXTAREA' || event.target?.isContentEditable;
+
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        searchInputRef.current?.focus();
+        return;
+      }
+
+      if (isTyping || event.altKey || event.ctrlKey || event.metaKey) return;
+
+      if (event.key === 'ArrowLeft' && currentPage > 1) {
+        updateState({ page: currentPage - 1 });
+      }
+
+      if (event.key === 'ArrowRight' && currentPage < totalPages) {
+        updateState({ page: currentPage + 1 });
+      }
+    };
+
+    window.addEventListener('keydown', onKeydown);
+    return () => window.removeEventListener('keydown', onKeydown);
+  }, [currentPage, totalPages]);
 
   const resetCurrentType = () => {
     if (state.selectedType === 'mcq') {
@@ -1702,6 +1756,7 @@ function App() {
               >
                 <strong>{module.name}</strong>
                 <small>{module.tag}</small>
+                <small>Progress MCQ {moduleCompletionMap[module.name] || 0}%</small>
               </button>
             ))}
           </div>
@@ -1792,9 +1847,10 @@ function App() {
 
           <section className="toolbar card">
             <input
+              ref={searchInputRef}
               value={state.query}
               onChange={(e) => updateState({ query: e.target.value, page: 1 })}
-              placeholder="Cari soal, kata kunci, atau konsep..."
+              placeholder="Cari soal, kata kunci, atau konsep... (Ctrl/Cmd + K)"
             />
             {state.selectedType === 'mcq' ? (
               <select
@@ -1820,8 +1876,19 @@ function App() {
             {state.selectedType === 'mcq' && (
               <button className="ghost" onClick={jumpToFirstUnanswered}>➡️ Lanjut soal belum dijawab</button>
             )}
+            {state.selectedType === 'mcq' && (
+              <button className="ghost" onClick={jumpToFirstWrong}>🧠 Review jawaban salah</button>
+            )}
             <button className="ghost danger" onClick={resetModuleProgress}>♻️ Reset modul aktif</button>
             <button className="ghost danger" onClick={resetCurrentType}>🗑️ Reset data</button>
+          </section>
+
+          <section className="card progress-panel">
+            <p>
+              Ringkas cepat: {remainingMcqCount} MCQ belum dijawab di modul ini.
+              Gunakan tombol <strong>Review jawaban salah</strong> untuk fokus perbaikan.
+            </p>
+            <p className="subtle-info">Shortcut navigasi: ←/→ pindah halaman.</p>
           </section>
 
           {toast ? <div className="card toast">{toast}</div> : null}
