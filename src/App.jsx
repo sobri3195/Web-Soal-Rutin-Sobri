@@ -10,6 +10,7 @@ const moduleConfigs = [
   { name: 'TPA Bappenas', tag: 'Verbal, Numerik & Logika', questionCount: 100 },
   { name: 'IELTS', tag: 'Academic English', questionCount: 100 },
   { name: 'Bahasa Spanyol', tag: 'Español Básico', questionCount: 100 },
+  { name: 'Tes IQ', tag: 'Penalaran & Pola', questionCount: 150 },
 ];
 
 const modules = moduleConfigs.map((module) => module.name);
@@ -367,6 +368,96 @@ const createTpaQuestion = (moduleName, index) => {
         answer: syl.conclusion,
         explanation: `Dari premis yang diberikan, kesimpulan logis adalah "${syl.conclusion}"`,
         options: shuffleDeterministic([syl.conclusion, ...syl.distractors], baseSeed),
+      };
+    },
+  ];
+
+  const question = variants[index % variants.length]();
+  return {
+    id: `mcq-${moduleName}-${n}`,
+    module: moduleName,
+    ...question,
+  };
+};
+
+// ===== SOAL TES IQ =====
+const createIqQuestion = (moduleName, index) => {
+  const n = index + 1;
+  const baseSeed = hashString(moduleName) + n * 997;
+
+  const variants = [
+    () => {
+      const start = ((baseSeed * 3) % 8) + 2;
+      const ratio = ((baseSeed * 5) % 3) + 2;
+      const sequence = [start, start * ratio, start * ratio ** 2, start * ratio ** 3];
+      const result = start * ratio ** 4;
+      const answer = String(result);
+      return {
+        prompt: `Lengkapi deret: ${sequence.join(', ')}, ...`,
+        answer,
+        explanation: `Pola deret dikali ${ratio} setiap langkah. Angka berikutnya ${sequence[3]} × ${ratio} = ${result}.`,
+        options: shuffleDeterministic([answer, String(result + ratio), String(result - start), String(result + start)], baseSeed),
+      };
+    },
+    () => {
+      const age = ((baseSeed * 7) % 12) + 8;
+      const future = ((baseSeed * 11) % 6) + 4;
+      const result = age + future;
+      const answer = String(result) + ' tahun';
+      return {
+        prompt: `Usia Dita sekarang ${age} tahun. Berapa usia Dita ${future} tahun lagi?`,
+        answer,
+        explanation: `Usia masa depan = usia sekarang + selisih tahun = ${age} + ${future} = ${result}.`,
+        options: shuffleDeterministic(
+          [answer, String(result - 2) + ' tahun', String(result + 2) + ' tahun', String(age + future + 5) + ' tahun'],
+          baseSeed,
+        ),
+      };
+    },
+    () => {
+      const a = ((baseSeed * 13) % 20) + 10;
+      const b = ((baseSeed * 17) % 10) + 5;
+      const c = ((baseSeed * 19) % 6) + 2;
+      const result = (a + b) - c;
+      const answer = String(result);
+      return {
+        prompt: `Jika nilai A = ${a}, B = ${b}, dan C = ${c}, maka nilai (A + B) - C adalah...`,
+        answer,
+        explanation: `(${a} + ${b}) - ${c} = ${a + b} - ${c} = ${result}.`,
+        options: shuffleDeterministic([answer, String(result + c), String(result - b), String(a - b + c)], baseSeed),
+      };
+    },
+    () => {
+      const items = ['apel', 'jeruk', 'anggur', 'pisang'];
+      const odd = 'pisang';
+      return {
+        prompt: 'Manakah yang paling berbeda berdasarkan jumlah suku kata?',
+        answer: odd,
+        explanation: 'Kata "pisang" memiliki 2 suku kata, sedangkan opsi lainnya dipilih sebagai kelompok 3 suku kata dalam pola soal ini.',
+        options: shuffleDeterministic(items, baseSeed),
+      };
+    },
+    () => {
+      const men = ((baseSeed * 23) % 5) + 4;
+      const women = ((baseSeed * 29) % 5) + 3;
+      const result = men + women;
+      const answer = String(result);
+      return {
+        prompt: `Dalam sebuah tim ada ${men} pria dan ${women} wanita. Total anggota tim adalah...`,
+        answer,
+        explanation: `Total anggota = ${men} + ${women} = ${result}.`,
+        options: shuffleDeterministic([answer, String(result + 2), String(result - 1), String(men * women)], baseSeed),
+      };
+    },
+    () => {
+      const side = ((baseSeed * 31) % 8) + 4;
+      const result = side * side;
+      const answer = String(result);
+      return {
+        prompt: `Sebuah persegi memiliki panjang sisi ${side} cm. Berapa luasnya?`,
+        answer,
+        explanation: `Luas persegi = sisi × sisi = ${side} × ${side} = ${result} cm².`,
+        options: shuffleDeterministic([answer, String(side * 4), String(result + side), String(result - side)], baseSeed),
       };
     },
   ];
@@ -941,6 +1032,8 @@ const createMcqQuestion = (moduleName, index) => {
       return createToeflQuestion(moduleName, index);
     case 'Bahasa Spanyol':
       return createSpanishQuestion(moduleName, index);
+    case 'Tes IQ':
+      return createIqQuestion(moduleName, index);
     default:
       return createSimakMathQuestion(moduleName, index);
   }
