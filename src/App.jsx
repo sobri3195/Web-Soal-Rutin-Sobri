@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 const moduleConfigs = [
   { name: 'Matematika Simak UI', tag: 'Analitik Kuantitatif', questionCount: 200 },
   { name: 'Matematika LPDP', tag: 'Reasoning Numerik', questionCount: 200 },
+  { name: 'Tes Substansi LPDP', tag: 'Kebijakan & Kepemimpinan', questionCount: 150 },
   { name: 'Tes Potensi Akademik', tag: 'Verbal & Logika', questionCount: 200 },
   { name: 'Soal Onkologi Radiasi', tag: 'Konsep Medis', questionCount: 200 },
   { name: 'Soal Toefl', tag: 'English Mastery', questionCount: 200 },
@@ -249,6 +250,88 @@ const createLpdpMathQuestion = (moduleName, index) => {
         ),
       };
     },
+  ];
+
+  const question = variants[index % variants.length]();
+  return {
+    id: `mcq-${moduleName}-${n}`,
+    module: moduleName,
+    ...question,
+  };
+};
+
+// ===== SOAL TES SUBSTANSI LPDP =====
+const createLpdpSubstanceQuestion = (moduleName, index) => {
+  const n = index + 1;
+  const baseSeed = hashString(moduleName) + n * 997;
+
+  const variants = [
+    () => ({
+      prompt: 'Dalam menyusun proposal studi LPDP, bagian yang paling menunjukkan relevansi dengan kebutuhan Indonesia adalah?',
+      answer: 'Rencana kontribusi pascastudi yang spesifik, terukur, dan sesuai isu prioritas nasional',
+      explanation: 'Substansi LPDP menilai dampak nyata untuk Indonesia. Kontribusi yang spesifik dan terukur menunjukkan kesiapan implementasi setelah studi.',
+      options: shuffleDeterministic([
+        'Rencana kontribusi pascastudi yang spesifik, terukur, dan sesuai isu prioritas nasional',
+        'Daftar universitas luar negeri dengan ranking tertinggi saja',
+        'Pengalaman organisasi tanpa kaitan dengan tujuan studi',
+        'Ringkasan CV tanpa rencana implementasi',
+      ], baseSeed),
+    }),
+    () => ({
+      prompt: 'Jika terjadi konflik kepentingan dalam tim proyek sosial, langkah pertama yang paling tepat adalah?',
+      answer: 'Memetakan akar masalah dan menyepakati aturan keputusan yang transparan',
+      explanation: 'Konflik perlu ditangani berbasis data dan proses yang adil, bukan asumsi personal. Transparansi memperkuat kepercayaan tim.',
+      options: shuffleDeterministic([
+        'Memetakan akar masalah dan menyepakati aturan keputusan yang transparan',
+        'Menunda diskusi hingga konflik mereda dengan sendirinya',
+        'Mengikuti pendapat mayoritas tanpa klarifikasi masalah',
+        'Memindahkan anggota yang berbeda pendapat ke tim lain',
+      ], baseSeed),
+    }),
+    () => ({
+      prompt: 'Indikator keberhasilan program pemberdayaan masyarakat yang paling kuat adalah?',
+      answer: 'Peningkatan kapasitas warga yang berkelanjutan setelah program selesai',
+      explanation: 'Program substansial dinilai dari keberlanjutan dampak, bukan hanya output jangka pendek saat intervensi berlangsung.',
+      options: shuffleDeterministic([
+        'Peningkatan kapasitas warga yang berkelanjutan setelah program selesai',
+        'Jumlah seminar yang diselenggarakan selama proyek',
+        'Banyaknya unggahan media sosial tentang program',
+        'Total anggaran yang berhasil dibelanjakan',
+      ], baseSeed),
+    }),
+    () => ({
+      prompt: 'Pada wawancara LPDP, ketika ditanya tentang kegagalan terbesar, jawaban terbaik seharusnya?',
+      answer: 'Menjelaskan konteks, refleksi pembelajaran, dan perbaikan konkret yang sudah dilakukan',
+      explanation: 'Penilai mencari growth mindset: kemampuan refleksi, akuntabilitas, dan pembuktian perbaikan.',
+      options: shuffleDeterministic([
+        'Menjelaskan konteks, refleksi pembelajaran, dan perbaikan konkret yang sudah dilakukan',
+        'Menyalahkan kondisi eksternal agar terlihat tidak bersalah',
+        'Menghindari cerita gagal dan hanya menonjolkan prestasi',
+        'Memberikan jawaban umum tanpa contoh nyata',
+      ], baseSeed),
+    }),
+    () => ({
+      prompt: 'Kebijakan publik yang evidence-based ditandai oleh?',
+      answer: 'Keputusan berbasis data valid, evaluasi berkala, dan mekanisme umpan balik',
+      explanation: 'Evidence-based policy menuntut siklus data: pengumpulan, analisis, implementasi, evaluasi, lalu perbaikan.',
+      options: shuffleDeterministic([
+        'Keputusan berbasis data valid, evaluasi berkala, dan mekanisme umpan balik',
+        'Keputusan cepat berdasarkan intuisi pimpinan semata',
+        'Program yang populer walau tanpa baseline data',
+        'Kebijakan yang tidak membuka ruang evaluasi publik',
+      ], baseSeed),
+    }),
+    () => ({
+      prompt: 'Saat diminta menjelaskan kontribusi untuk daerah 3T, pendekatan paling meyakinkan adalah?',
+      answer: 'Memaparkan intervensi realistis berbasis kebutuhan lokal serta kolaborasi multipihak',
+      explanation: 'Kontribusi untuk daerah 3T harus kontekstual, realistis, dan melibatkan aktor lokal agar solusi berkelanjutan.',
+      options: shuffleDeterministic([
+        'Memaparkan intervensi realistis berbasis kebutuhan lokal serta kolaborasi multipihak',
+        'Mereplikasi program kota besar tanpa adaptasi konteks',
+        'Berfokus pada target jangka pendek untuk laporan cepat',
+        'Menunggu dukungan penuh pusat sebelum menyusun rencana',
+      ], baseSeed),
+    }),
   ];
 
   const question = variants[index % variants.length]();
@@ -1018,6 +1101,8 @@ const createMcqQuestion = (moduleName, index) => {
       return createSimakMathQuestion(moduleName, index);
     case 'Matematika LPDP':
       return createLpdpMathQuestion(moduleName, index);
+    case 'Tes Substansi LPDP':
+      return createLpdpSubstanceQuestion(moduleName, index);
     case 'Tes Potensi Akademik':
       return createTpaQuestion(moduleName, index);
     case 'Soal Onkologi Radiasi':
@@ -1064,6 +1149,19 @@ const essayPrompts = {
     'Apa perbedaan antara probabilitas teoritis dan probabilitas empiris?',
     'Jelaskan konsep sampling dan bagaimana menentukan ukuran sampel yang representatif.',
     'Bagaimana interpretasi data dari tabel dan grafik dalam pengambilan keputusan?',
+  ],
+
+  'Tes Substansi LPDP': [
+    'Jelaskan isu pembangunan nasional yang paling Anda kuasai dan strategi intervensi yang realistis.',
+    'Bagaimana menyusun rencana kontribusi pascastudi yang terukur, terjadwal, dan relevan dengan kebutuhan Indonesia?',
+    'Apa pendekatan terbaik untuk membangun kolaborasi lintas sektor dalam menyelesaikan masalah publik?',
+    'Bagaimana Anda memastikan program sosial yang dirancang tetap berkelanjutan setelah fase pendanaan berakhir?',
+    'Jelaskan pengalaman kepemimpinan Anda saat menghadapi konflik tim dan keputusan sulit.',
+    'Bagaimana cara mengintegrasikan data dan evidence dalam proses perumusan kebijakan?',
+    'Apa strategi Anda untuk memberikan dampak nyata di daerah 3T secara bertahap?',
+    'Bagaimana Anda mengukur keberhasilan intervensi sosial selain indikator output jangka pendek?',
+    'Jelaskan nilai integritas dalam pengelolaan program publik dan contoh implementasinya.',
+    'Bagaimana Anda menyeimbangkan idealisme perubahan dengan keterbatasan sumber daya di lapangan?',
   ],
   'Tes Potensi Akademik': [
     'Jelaskan struktur penalaran logis dalam argumen deduktif dan induktif. Berikan contoh masing-masing.',
@@ -1194,6 +1292,19 @@ const getEssayHint = (moduleName, promptIndex) => {
       'Jelaskan margin of error dan confidence level.',
       'Identifikasi tren dan anomali data.',
     ],
+
+    'Tes Substansi LPDP': [
+      'Pilih isu spesifik, jelaskan akar masalah dan aktor kunci.',
+      'Gunakan kerangka SMART: specific, measurable, achievable, relevant, time-bound.',
+      'Petakan peran pemerintah, komunitas, akademisi, dan sektor swasta.',
+      'Sertakan strategi exit plan dan penguatan kapasitas lokal.',
+      'Fokus pada situasi, tindakan, hasil, dan refleksi (STAR + learning).',
+      'Jelaskan sumber data, baseline, target, serta mekanisme evaluasi.',
+      'Uraikan tahapan implementasi dan prioritas intervensi.',
+      'Bedakan indikator output, outcome, dan impact secara jelas.',
+      'Tunjukkan transparansi, akuntabilitas, dan mitigasi risiko etika.',
+      'Berikan contoh trade-off dan cara menetapkan prioritas program.',
+    ],
     'Tes Potensi Akademik': [
       'Contoh: silogisme dan generalisasi.',
       'Cari premis yang tidak dinyatakan eksplisit.',
@@ -1316,6 +1427,19 @@ const flashcardContent = {
     { front: 'Median', back: 'Nilai tengah data yang terurut.' },
     { front: 'Modus', back: 'Nilai yang paling sering muncul.' },
     { front: 'Standar Deviasi', back: 'Ukuran penyebaran data. σ = √[Σ(x-μ)²/n]' },
+  ],
+
+  'Tes Substansi LPDP': [
+    { front: 'Kontribusi Pascastudi', back: 'Rencana dampak nyata setelah lulus yang relevan dengan kebutuhan strategis Indonesia.' },
+    { front: 'SMART Goals', back: 'Target yang Specific, Measurable, Achievable, Relevant, Time-bound.' },
+    { front: 'Evidence-based Policy', back: 'Kebijakan berbasis data valid, evaluasi, dan perbaikan berkelanjutan.' },
+    { front: 'Stakeholder Mapping', back: 'Pemetaan aktor kunci, kepentingan, pengaruh, dan strategi pelibatan.' },
+    { front: 'Theory of Change', back: 'Alur logis dari input, aktivitas, output, outcome, hingga impact.' },
+    { front: 'Output vs Outcome', back: 'Output = hasil langsung; Outcome = perubahan perilaku/kondisi penerima manfaat.' },
+    { front: 'Skalabilitas Program', back: 'Kemampuan program diperluas tanpa menurunkan kualitas dampak.' },
+    { front: 'Keberlanjutan', back: 'Program tetap berjalan karena kapasitas lokal dan dukungan sistem.' },
+    { front: 'Integritas Publik', back: 'Konsistensi antara nilai, keputusan, dan akuntabilitas penggunaan sumber daya.' },
+    { front: 'Daerah 3T', back: 'Wilayah terdepan, terluar, tertinggal yang butuh pendekatan kebijakan kontekstual.' },
   ],
   'Tes Potensi Akademik': [
     { front: 'Silogisme', back: 'Penarikan kesimpulan dari dua premis. Contoh: Socrates adalah manusia, semua manusia fana.' },
