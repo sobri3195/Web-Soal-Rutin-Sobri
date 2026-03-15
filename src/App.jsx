@@ -1569,6 +1569,14 @@ const buildQuestionBank = () => {
 };
 
 const questionBank = buildQuestionBank();
+const moduleQuestionMap = moduleConfigs.reduce((acc, module) => {
+  acc[module.name] = {
+    mcq: questionBank.mcq.filter((question) => question.module === module.name),
+    essay: questionBank.essay.filter((question) => question.module === module.name),
+    flashcards: questionBank.flashcards.filter((question) => question.module === module.name),
+  };
+  return acc;
+}, {});
 
 const STORAGE_KEY = 'sobri-practice-state-v3';
 const VALID_TYPES = ['mcq', 'essay', 'flashcards'];
@@ -1713,18 +1721,9 @@ function App() {
   const currentPage = Math.min(state.page, totalPages);
   const pagedItems = displayItems.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
-  const moduleMcq = useMemo(
-    () => questionBank.mcq.filter((question) => question.module === state.selectedModule),
-    [state.selectedModule],
-  );
-  const moduleEssay = useMemo(
-    () => questionBank.essay.filter((question) => question.module === state.selectedModule),
-    [state.selectedModule],
-  );
-  const moduleFlashcards = useMemo(
-    () => questionBank.flashcards.filter((question) => question.module === state.selectedModule),
-    [state.selectedModule],
-  );
+  const moduleMcq = moduleQuestionMap[state.selectedModule]?.mcq || [];
+  const moduleEssay = moduleQuestionMap[state.selectedModule]?.essay || [];
+  const moduleFlashcards = moduleQuestionMap[state.selectedModule]?.flashcards || [];
 
   const answeredCount = moduleMcq.filter((q) => state.mcqAnswers[q.id]).length;
   const correctCount = moduleMcq.filter((q) => state.mcqAnswers[q.id] === q.answer).length;
@@ -1738,7 +1737,7 @@ function App() {
 
   const moduleCompletionMap = useMemo(() => {
     return moduleConfigs.reduce((acc, module) => {
-      const moduleQuestions = questionBank.mcq.filter((item) => item.module === module.name);
+      const moduleQuestions = moduleQuestionMap[module.name]?.mcq || [];
       const moduleAnswered = moduleQuestions.filter((item) => state.mcqAnswers[item.id]).length;
       acc[module.name] = moduleQuestions.length
         ? Math.round((moduleAnswered / moduleQuestions.length) * 100)
@@ -1766,16 +1765,40 @@ function App() {
 
   const jumpToFirstWrong = () => {
     if (state.selectedType !== 'mcq') return;
-    const firstWrongIndex = moduleMcq.findIndex((q) => {
+    const wrongItems = moduleMcq.filter((q) => {
       const answer = state.mcqAnswers[q.id];
       return answer && answer !== q.answer;
     });
-    if (firstWrongIndex === -1) {
+    if (!wrongItems.length) {
       setToast('Belum ada jawaban salah di modul ini. Keren! ✨');
       return;
     }
-    updateState({ mcqFilter: 'wrong', page: Math.floor(firstWrongIndex / PAGE_SIZE) + 1 });
+    const firstWrongQuestion = wrongItems[0];
+    const firstWrongIndex = moduleMcq.findIndex((q) => q.id === firstWrongQuestion.id);
+    updateState({ mcqFilter: 'wrong', page: 1 });
     setToast(`Review soal salah dimulai dari #${firstWrongIndex + 1}`);
+  };
+
+  const jumpToFirstUnansweredEssay = () => {
+    if (state.selectedType !== 'essay') return;
+    const firstUnansweredIndex = moduleEssay.findIndex((q) => !(state.essayAnswers[q.id] || '').trim());
+    if (firstUnansweredIndex === -1) {
+      setToast('Semua essai di modul ini sudah terisi. Mantap! 🎉');
+      return;
+    }
+    updateState({ page: Math.floor(firstUnansweredIndex / PAGE_SIZE) + 1 });
+    setToast(`Lanjut ke essai #${firstUnansweredIndex + 1}`);
+  };
+
+  const jumpToFirstUnmasteredFlashcard = () => {
+    if (state.selectedType !== 'flashcards') return;
+    const firstUnmasteredIndex = moduleFlashcards.findIndex((card) => !state.masteredFlashcards[card.id]);
+    if (firstUnmasteredIndex === -1) {
+      setToast('Semua flashcard di modul ini sudah dikuasai. Keren! 🌟');
+      return;
+    }
+    updateState({ showMasteredFlashcards: false, page: 1 });
+    setToast(`Fokus ulang dari kartu #${firstUnmasteredIndex + 1}`);
   };
 
   useEffect(() => {
@@ -1805,6 +1828,10 @@ function App() {
   }, [currentPage, totalPages]);
 
   const resetCurrentType = () => {
+    const typeLabel = state.selectedType === 'mcq' ? 'MCQ' : state.selectedType === 'essay' ? 'Essai' : 'Flashcard';
+    const proceed = window.confirm(`Reset semua data ${typeLabel} pada modul aktif?`);
+    if (!proceed) return;
+
     if (state.selectedType === 'mcq') {
       const nextAnswers = { ...state.mcqAnswers };
       const nextExplanations = { ...state.mcqShowExplanation };
@@ -1840,6 +1867,9 @@ function App() {
   };
 
   const resetModuleProgress = () => {
+    const proceed = window.confirm(`Reset semua progress di modul ${state.selectedModule}?`);
+    if (!proceed) return;
+
     const moduleQuestionIds = new Set(
       questionBank.mcq.filter((q) => q.module === state.selectedModule).map((q) => q.id),
     );
@@ -1868,6 +1898,9 @@ function App() {
   };
 
   const resetAllProgress = () => {
+    const proceed = window.confirm('Reset semua progress di seluruh modul? Tindakan ini tidak bisa dibatalkan.');
+    if (!proceed) return;
+
     localStorage.removeItem(STORAGE_KEY);
     setState(initialState);
     setToast('Semua progress berhasil dihapus dan aplikasi direset.');
@@ -2069,6 +2102,9 @@ function App() {
               onChange={(e) => updateState({ query: e.target.value, page: 1 })}
               placeholder="Cari soal, kata kunci, atau konsep... (Ctrl/Cmd + K)"
             />
+            {state.query ? (
+              <button className="ghost" onClick={() => updateState({ query: '', page: 1 })}>❎ Bersihkan pencarian</button>
+            ) : null}
             {state.selectedType === 'mcq' ? (
               <select
                 value={state.mcqFilter}
@@ -2095,6 +2131,12 @@ function App() {
             )}
             {state.selectedType === 'mcq' && (
               <button className="ghost" onClick={jumpToFirstWrong}>🧠 Review jawaban salah</button>
+            )}
+            {state.selectedType === 'essay' && (
+              <button className="ghost" onClick={jumpToFirstUnansweredEssay}>✍️ Lanjut essai kosong</button>
+            )}
+            {state.selectedType === 'flashcards' && (
+              <button className="ghost" onClick={jumpToFirstUnmasteredFlashcard}>📌 Fokus yang belum dikuasai</button>
             )}
             <button className="ghost danger" onClick={resetModuleProgress}>♻️ Reset modul aktif</button>
             <button className="ghost danger" onClick={resetCurrentType}>🗑️ Reset data</button>
