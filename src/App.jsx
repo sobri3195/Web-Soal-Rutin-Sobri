@@ -1585,6 +1585,7 @@ const moduleQuestionMap = moduleConfigs.reduce((acc, module) => {
 const STORAGE_KEY = 'sobri-practice-state-v3';
 const VALID_TYPES = ['mcq', 'essay', 'flashcards'];
 const VALID_MCQ_FILTERS = ['all', 'unanswered', 'correct', 'wrong'];
+const asRecord = (value) => (value && typeof value === 'object' && !Array.isArray(value) ? value : {});
 
 const initialState = {
   selectedModule: modules[0],
@@ -1616,21 +1617,11 @@ function App() {
     if (typeof snapshot.selectedType === 'string' && VALID_TYPES.includes(snapshot.selectedType)) {
       safe.selectedType = snapshot.selectedType;
     }
-    if (snapshot.mcqAnswers && typeof snapshot.mcqAnswers === 'object') {
-      safe.mcqAnswers = snapshot.mcqAnswers;
-    }
-    if (snapshot.mcqShowExplanation && typeof snapshot.mcqShowExplanation === 'object') {
-      safe.mcqShowExplanation = snapshot.mcqShowExplanation;
-    }
-    if (snapshot.essayAnswers && typeof snapshot.essayAnswers === 'object') {
-      safe.essayAnswers = snapshot.essayAnswers;
-    }
-    if (snapshot.flashcardFlips && typeof snapshot.flashcardFlips === 'object') {
-      safe.flashcardFlips = snapshot.flashcardFlips;
-    }
-    if (snapshot.masteredFlashcards && typeof snapshot.masteredFlashcards === 'object') {
-      safe.masteredFlashcards = snapshot.masteredFlashcards;
-    }
+    safe.mcqAnswers = asRecord(snapshot.mcqAnswers);
+    safe.mcqShowExplanation = asRecord(snapshot.mcqShowExplanation);
+    safe.essayAnswers = asRecord(snapshot.essayAnswers);
+    safe.flashcardFlips = asRecord(snapshot.flashcardFlips);
+    safe.masteredFlashcards = asRecord(snapshot.masteredFlashcards);
     if (typeof snapshot.query === 'string') {
       safe.query = snapshot.query;
     }
@@ -1738,6 +1729,10 @@ function App() {
   // Calculate accuracy rate
   const accuracyRate = answeredCount > 0 ? Math.round((correctCount / answeredCount) * 100) : 0;
   const remainingMcqCount = moduleMcq.length - answeredCount;
+  const filteredSummary = displayItems.length === filteredItems.length
+    ? `${displayItems.length} item tampil`
+    : `${displayItems.length} dari ${filteredItems.length} item tampil`;
+  const canResetView = state.page > 1 || !!state.query || state.mcqFilter !== 'all' || !state.showMasteredFlashcards;
 
   const moduleCompletionMap = useMemo(() => {
     return moduleConfigs.reduce((acc, module) => {
@@ -1825,6 +1820,11 @@ function App() {
       if (event.key === 'ArrowRight' && currentPage < totalPages) {
         updateState({ page: currentPage + 1 });
       }
+
+      if (event.key === '1') onChangeType('mcq');
+      if (event.key === '2') onChangeType('essay');
+      if (event.key === '3') onChangeType('flashcards');
+      if (event.key.toLowerCase() === 'r') jumpToRandomQuestion();
     };
 
     window.addEventListener('keydown', onKeydown);
@@ -1925,6 +1925,16 @@ function App() {
 
   const onChangeType = (type) => {
     updateState({ selectedType: type, page: 1, query: '', mcqFilter: 'all' });
+  };
+
+  const resetViewState = () => {
+    updateState({
+      page: 1,
+      query: '',
+      mcqFilter: 'all',
+      showMasteredFlashcards: true,
+    });
+    setToast('Tampilan berhasil direset ke default.');
   };
 
   const exportProgress = () => {
@@ -2130,6 +2140,9 @@ function App() {
               </label>
             ) : null}
             <button className="ghost" onClick={jumpToRandomQuestion}>🎲 Soal acak</button>
+            {canResetView && (
+              <button className="ghost" onClick={resetViewState}>🔄 Reset tampilan</button>
+            )}
             {state.selectedType === 'mcq' && (
               <button className="ghost" onClick={jumpToFirstUnanswered}>➡️ Lanjut soal belum dijawab</button>
             )}
@@ -2151,10 +2164,10 @@ function App() {
               Ringkas cepat: {remainingMcqCount} MCQ belum dijawab di modul ini.
               Gunakan tombol <strong>Review jawaban salah</strong> untuk fokus perbaikan.
             </p>
-            <p className="subtle-info">Shortcut navigasi: ←/→ pindah halaman.</p>
+            <p className="subtle-info">{filteredSummary} • Shortcut: ←/→ halaman, 1/2/3 ganti mode, R soal acak, Ctrl/Cmd+K fokus cari.</p>
           </section>
 
-          {toast ? <div className="card toast">{toast}</div> : null}
+          {toast ? <div className="card toast" role="status" aria-live="polite">{toast}</div> : null}
 
           {displayItems.length === 0 ? (
             <div className="card empty">
