@@ -9,7 +9,9 @@ const moduleConfigs = [
   { name: 'Soal Toefl', tag: 'English Mastery', questionCount: 200 },
   { name: 'UKMPPD', tag: 'Semua Stase Kedokteran', questionCount: 150 },
   { name: 'TPA Bappenas', tag: 'Verbal, Numerik & Logika', questionCount: 100 },
+  { name: 'TPA Simak UI Paskasarjana', tag: 'Verbal, Numerik & Logika', questionCount: 100 },
   { name: 'IELTS', tag: 'Academic English', questionCount: 100 },
+  { name: 'Bahasa inggris Simak UI Paskasarjana', tag: 'Academic English', questionCount: 100 },
   { name: 'Bahasa Spanyol', tag: 'Español Básico', questionCount: 100 },
   { name: 'Tes IQ', tag: 'Penalaran & Pola', questionCount: 150 },
 ];
@@ -1112,8 +1114,10 @@ const createMcqQuestion = (moduleName, index) => {
     case 'UKMPPD':
       return createUkmppdQuestion(moduleName, index);
     case 'TPA Bappenas':
+    case 'TPA Simak UI Paskasarjana':
       return createTpaQuestion(moduleName, index);
     case 'IELTS':
+    case 'Bahasa inggris Simak UI Paskasarjana':
       return createToeflQuestion(moduleName, index);
     case 'Bahasa Spanyol':
       return createSpanishQuestion(moduleName, index);
