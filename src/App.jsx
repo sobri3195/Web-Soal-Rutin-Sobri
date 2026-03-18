@@ -1605,8 +1605,11 @@ const initialState = {
 function App() {
   const [state, setState] = useState(initialState);
   const [toast, setToast] = useState('');
+  const [showShortcutHelp, setShowShortcutHelp] = useState(false);
+  const [showBackToTop, setShowBackToTop] = useState(false);
   const importInputRef = useRef(null);
   const searchInputRef = useRef(null);
+  const contentRef = useRef(null);
 
   const sanitizeImportedState = (snapshot = {}) => {
     const safe = { ...initialState };
@@ -1734,6 +1737,29 @@ function App() {
     : `${displayItems.length} dari ${filteredItems.length} item tampil`;
   const canResetView = state.page > 1 || !!state.query || state.mcqFilter !== 'all' || !state.showMasteredFlashcards;
 
+  const typeSummary =
+    state.selectedType === 'mcq'
+      ? {
+          title: 'Progress MCQ',
+          done: answeredCount,
+          total: moduleMcq.length,
+          helper: `${correctCount} jawaban benar • ${remainingMcqCount} belum dijawab`,
+        }
+      : state.selectedType === 'essay'
+        ? {
+            title: 'Progress Essai',
+            done: essayAnsweredCount,
+            total: moduleEssay.length,
+            helper: `${moduleEssay.length - essayAnsweredCount} essai belum terisi`,
+          }
+        : {
+            title: 'Progress Flashcard',
+            done: masteredFlashcardsCount,
+            total: moduleFlashcards.length,
+            helper: `${moduleFlashcards.length - masteredFlashcardsCount} kartu belum dikuasai`,
+          };
+  const typeProgressPercent = typeSummary.total > 0 ? Math.round((typeSummary.done / typeSummary.total) * 100) : 0;
+
   const moduleCompletionMap = useMemo(() => {
     return moduleConfigs.reduce((acc, module) => {
       const moduleQuestions = moduleQuestionMap[module.name]?.mcq || [];
@@ -1825,11 +1851,27 @@ function App() {
       if (event.key === '2') onChangeType('essay');
       if (event.key === '3') onChangeType('flashcards');
       if (event.key.toLowerCase() === 'r') jumpToRandomQuestion();
+      if (event.key === '?') setShowShortcutHelp(true);
+      if (event.key === 'Escape') setShowShortcutHelp(false);
     };
 
     window.addEventListener('keydown', onKeydown);
     return () => window.removeEventListener('keydown', onKeydown);
   }, [currentPage, totalPages]);
+
+  useEffect(() => {
+    const contentEl = contentRef.current;
+    if (!contentEl) return undefined;
+
+    const onScroll = () => setShowBackToTop(contentEl.scrollTop > 220);
+
+    contentEl.addEventListener('scroll', onScroll);
+    return () => contentEl.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [state.selectedModule, state.selectedType, currentPage]);
 
   const resetCurrentType = () => {
     const typeLabel = state.selectedType === 'mcq' ? 'MCQ' : state.selectedType === 'essay' ? 'Essai' : 'Flashcard';
@@ -2047,7 +2089,7 @@ function App() {
           </div>
         </aside>
 
-        <main className="content">
+        <main className="content" ref={contentRef}>
           <header>
             <div>
               <h2>{state.selectedModule}</h2>
@@ -2067,6 +2109,7 @@ function App() {
                   {tab.label}
                 </button>
               ))}
+              <button className="tab" onClick={() => setShowShortcutHelp(true)}>⌨️ Shortcut</button>
             </div>
           </header>
 
@@ -2101,11 +2144,12 @@ function App() {
 
           <section className="card progress-panel">
             <div>
-              <p>Progress modul aktif</p>
-              <strong>{progressPercent}%</strong>
+              <p>{typeSummary.title}</p>
+              <strong>{typeProgressPercent}%</strong>
+              <p>{typeSummary.done}/{typeSummary.total} selesai • {typeSummary.helper}</p>
             </div>
             <div className="progress-track" aria-hidden="true">
-              <div className="progress-fill" style={{ width: `${progressPercent}%` }} />
+              <div className="progress-fill" style={{ width: `${typeProgressPercent}%` }} />
             </div>
           </section>
 
@@ -2343,6 +2387,20 @@ function App() {
               <p>Halaman {currentPage} / {totalPages}</p>
               <small>{displayItems.length} item total</small>
             </div>
+            <label className="page-jump">
+              <span>Ke halaman</span>
+              <input
+                type="number"
+                min={1}
+                max={totalPages}
+                value={currentPage}
+                onChange={(e) => {
+                  const nextPage = Number(e.target.value);
+                  if (Number.isNaN(nextPage)) return;
+                  updateState({ page: Math.max(1, Math.min(totalPages, nextPage)) });
+                }}
+              />
+            </label>
             <button
               className="tab"
               onClick={() => updateState({ page: Math.min(totalPages, currentPage + 1) })}
@@ -2351,6 +2409,29 @@ function App() {
               Berikutnya →
             </button>
           </footer>
+
+          {showBackToTop && (
+            <button className="back-to-top" onClick={() => contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}>
+              ↑ Kembali ke atas
+            </button>
+          )}
+
+          {showShortcutHelp && (
+            <div className="shortcut-overlay" role="dialog" aria-modal="true">
+              <div className="shortcut-modal card">
+                <h3>Panduan Shortcut</h3>
+                <ul>
+                  <li><strong>Ctrl/Cmd + K</strong> → fokus ke pencarian</li>
+                  <li><strong>← / →</strong> → pindah halaman</li>
+                  <li><strong>1 / 2 / 3</strong> → pindah tipe (MCQ/Essai/Flashcard)</li>
+                  <li><strong>R</strong> → lompat ke soal acak</li>
+                  <li><strong>?</strong> → buka bantuan ini</li>
+                  <li><strong>Esc</strong> → tutup bantuan</li>
+                </ul>
+                <button className="ghost" onClick={() => setShowShortcutHelp(false)}>Tutup</button>
+              </div>
+            </div>
+          )}
         </main>
       </div>
     </div>
