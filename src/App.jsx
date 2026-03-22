@@ -3,6 +3,7 @@ import {
   DEFAULT_QUESTION_COUNT_PER_MODULE,
   moduleConfigs,
   moduleQuestionMap,
+  moduleResearchNotes,
   modules,
   PAGE_SIZE,
   questionBank,
@@ -103,6 +104,7 @@ function App() {
     [state.selectedModule],
   );
   const moduleQuestionCount = moduleMeta?.questionCount || DEFAULT_QUESTION_COUNT_PER_MODULE;
+  const moduleResearch = moduleResearchNotes[state.selectedModule];
 
   const filteredItems = useMemo(() => {
     const list = questionBank[state.selectedType] || [];
@@ -520,6 +522,24 @@ function App() {
             <div>
               <h2>{state.selectedModule}</h2>
               <p>{moduleMeta?.tag}</p>
+              {moduleResearch && (
+                <div className="research-note">
+                  <strong>Riset blueprint</strong>
+                  <p>{moduleResearch.summary}</p>
+                  <ul>
+                    {moduleResearch.priorities.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                  <div className="research-links">
+                    {moduleResearch.sources.map((source) => (
+                      <a key={source.url} href={source.url} target="_blank" rel="noreferrer">
+                        {source.label}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             <div className="tabs">
               {[
