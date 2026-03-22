@@ -83,6 +83,62 @@ export const moduleResearchNotes = {
       },
     ],
   },
+  'Soal Toefl': {
+    summary: 'Saya naikkan modul TOEFL ke level sulit dengan meniru domain resmi ETS yang menekankan academic reading, inference, rhetorical purpose, dan control atas structure/vocabulary presisi.',
+    priorities: [
+      'Reading sulit diarahkan ke inference, rhetorical purpose, dan generalization control dari paragraf akademik ringkas.',
+      'Structure sulit memakai inversion, third conditional, mandative subjunctive, dan agreement dengan pengganggu frasa.',
+      'Vocabulary diarahkan ke makna akademik presisi dengan distraktor dekat, bukan sinonim kasar.',
+      'Semua butir digenerasikan unik per indeks agar tidak mengulang stem yang sama sepanjang 200 soal.',
+    ],
+    sources: [
+      {
+        label: 'ETS — TOEFL iBT Test Content and Structure',
+        url: 'https://www.ets.org/toefl/test-takers/ibt/about/content/',
+      },
+      {
+        label: 'ETS — TOEFL iBT Reading question types (Inference and Rhetorical Purpose)',
+        url: 'https://www.br.ets.org/toefl/test-takers/ibt/about/content/reading.html/ets.html',
+      },
+    ],
+  },
+  'Bahasa inggris Simak UI Paskasarjana': {
+    summary: 'Karena SIMAK UI pascasarjana mensyaratkan tes Bahasa Inggris untuk konteks studi lanjut, modul ini saya arahkan ke academic English berat: cohesion, inversion, precision grammar, dan inferensi paragraf akademik.',
+    priorities: [
+      'Porsi besar diberikan pada connector logic, inversion formal, dan verb control yang biasa muncul pada bacaan akademik.',
+      'Reading comprehension dibuat berbasis inferensi, claim limitation, dan ketelitian makna yang relevan untuk studi pascasarjana.',
+      'Setiap indeks menghasilkan prompt berbeda supaya bank soal tidak memutar ulang item yang sama.',
+    ],
+    sources: [
+      {
+        label: 'Penerimaan UI — Persyaratan S2 SIMAK UI (tes bahasa Inggris sebagai komponen seleksi)',
+        url: 'https://penerimaan.ui.ac.id/period/requirement/3261',
+      },
+      {
+        label: 'FTUI brochure — Tes Bahasa Inggris 90 menit untuk Pascasarjana',
+        url: 'https://eng.ui.ac.id/wp-content/uploads/Brosur_Magister_S2_2019.pdf',
+      },
+    ],
+  },
+  UKMPPD: {
+    summary: 'Modul UKMPPD saya arahkan ke level sulit dengan fokus pada prioritas klinis, stabilisasi, dan keputusan next best step lintas stase yang konsisten dengan orientasi SKDI dan pembelajaran kompetensi KKI.',
+    priorities: [
+      'Kasus sulit difokuskan pada emergency recognition, time-sensitive management, dan sequencing tindakan aman.',
+      'Variasi stase diperluas lintas penyakit dalam, bedah, anak, obstetri, neurologi, komunitas, psikiatri, dan paru.',
+      'Distraktor dibuat menyerupai kesalahan klinis umum: menunda tindakan definitif, over-testing, atau salah urutan prioritas.',
+      'Semua kasus diacak berbasis parameter berbeda agar tidak ada stem identik antarsoal.',
+    ],
+    sources: [
+      {
+        label: 'KKI — Standar Kompetensi Dokter Indonesia (SKDI)',
+        url: 'https://kki.go.id/uploads/media/1683689635_fa3dea59333025ae148a.pdf',
+      },
+      {
+        label: 'KKI — Modul pembelajaran berbasis SKDI untuk persiapan uji kompetensi',
+        url: 'https://kki.go.id/kolegium-dokter/ujian/course/index.php?categoryid=13&lang=id',
+      },
+    ],
+  },
 };
 
 export const modules = moduleConfigs.map((module) => module.name);
@@ -116,6 +172,14 @@ const gcd = (a, b) => (b === 0 ? a : gcd(b, a % b));
 const buildNumericOptions = (answer, variants, seed, formatter = (value) => String(value)) => {
   const raw = [answer, ...variants].map((value) => formatter(value));
   return shuffleDeterministic([...new Set(raw)].slice(0, 4), seed);
+};
+
+const buildUniqueOptions = (answer, pool, seed, count = 4) => {
+  const distractors = shuffleDeterministic(
+    pool.filter((item) => item !== answer),
+    seed,
+  );
+  return shuffleDeterministic([answer, ...distractors.slice(0, count - 1)], seed + 97);
 };
 
 const quantContexts = [
@@ -1497,92 +1561,522 @@ const createAdvancedOncologyQuestion = (moduleName, index) => {
   };
 };
 
-const toeflGrammarSets = [
+
+const toeflStructureScenarios = [
   {
-    prompt: 'Had the committee ___ the baseline data earlier, the recommendation would have been more robust.',
-    answer: 'reviewed',
-    options: ['reviewed', 'reviews', 'review', 'reviewing'],
-    explanation: 'Inverted conditional with “Had + subject + past participle” requires the past participle form.',
+    frame: 'Had the {subject} {verb} the baseline data before the {event}, the final recommendation would have been more defensible.',
+    answer: '{verbPast}',
+    distractors: ['{verbBase}', '{verbIng}', '{verbThird}'],
+    explanation: 'Inverted third conditional after “Had” requires a past participle.',
+    verbs: [
+      { base: 'review', past: 'reviewed', ing: 'reviewing', third: 'reviews' },
+      { base: 'verify', past: 'verified', ing: 'verifying', third: 'verifies' },
+      { base: 'compile', past: 'compiled', ing: 'compiling', third: 'compiles' },
+      { base: 'triangulate', past: 'triangulated', ing: 'triangulating', third: 'triangulates' },
+    ],
   },
   {
-    prompt: 'No sooner ___ the interim report than the board requested a methodological audit.',
-    answer: 'had the analyst submitted',
-    options: ['had the analyst submitted', 'the analyst had submitted', 'did the analyst submit', 'has the analyst submitted'],
-    explanation: 'After “No sooner”, formal inversion uses past perfect: “had + subject + past participle”.',
+    frame: 'No sooner ___ the {artifact} than the {committee} requested an independent audit of the {focus}.',
+    answer: 'had the {subject} {verbPast}',
+    distractors: ['the {subject} had {verbPast}', 'did the {subject} {verbBase}', 'has the {subject} {verbPast}'],
+    explanation: 'After “No sooner”, formal written English uses inversion with the past perfect.',
+    verbs: [
+      { base: 'submit', past: 'submitted' },
+      { base: 'circulate', past: 'circulated' },
+      { base: 'release', past: 'released' },
+      { base: 'finalize', past: 'finalized' },
+    ],
   },
   {
-    prompt: 'The policy brief, along with three appendices, ___ scheduled for peer review next week.',
+    frame: 'The {headNoun}, along with two technical appendices and a replication memo, ___ scheduled for review at the {venue}.',
     answer: 'is',
-    options: ['is', 'are', 'were', 'be'],
-    explanation: 'The main subject is singular: “brief”. The phrase “along with...” does not change agreement.',
+    distractors: ['are', 'were', 'be'],
+    explanation: 'The singular head noun controls subject–verb agreement despite the interrupting phrase.',
   },
   {
-    prompt: 'The researcher demanded that each participant ___ informed of the protocol revision immediately.',
+    frame: 'The chair insisted that each participant ___ informed of the revised {policy} before the {milestone}.',
     answer: 'be',
-    options: ['be', 'is', 'was', 'been'],
-    explanation: 'Subjunctive mandative structure requires the base form “be”.',
+    distractors: ['is', 'was', 'been'],
+    explanation: 'Mandative subjunctive keeps the base form after verbs such as “insisted” or “recommended”.',
+  },
+  {
+    frame: 'Rarely ___ a longitudinal study so quickly after peer reviewers identified a flaw in the {focus}.',
+    answer: 'has a research team revised',
+    distractors: ['a research team has revised', 'did a research team revise', 'a research team revised'],
+    explanation: 'Fronted restrictive adverbs such as “Rarely” trigger inversion with an auxiliary.',
   },
 ];
-const toeflVocabSets = [
-  ['meticulous', 'showing great attention to detail'],
-  ['tenuous', 'weak or not strongly supported'],
-  ['ubiquitous', 'present or found everywhere'],
-  ['pragmatic', 'focused on practical results'],
-  ['salient', 'most noticeable or important'],
-  ['mitigate', 'reduce the severity of'],
+
+const toeflStructureLexicon = {
+  subjects: ['committee', 'review panel', 'methods team', 'curriculum board', 'oversight unit'],
+  events: ['policy briefing', 'grant hearing', 'final vote', 'funding decision', 'public consultation'],
+  artifacts: ['interim report', 'draft synthesis', 'methodology memo', 'field summary', 'evidence table'],
+  committees: ['ethics board', 'admissions panel', 'steering group', 'quality team', 'editorial committee'],
+  focuses: ['sampling strategy', 'causal claim', 'coding framework', 'cost projection', 'comparison group'],
+  headNouns: ['policy brief', 'research dossier', 'evaluation memo', 'conference abstract', 'technical note'],
+  venues: ['colloquium', 'senate meeting', 'faculty forum', 'grant panel', 'defense session'],
+  policies: ['consent protocol', 'reporting rubric', 'review schedule', 'safety procedure', 'grading policy'],
+  milestones: ['site visit', 'pilot launch', 'ethics submission', 'data freeze', 'committee debrief'],
+};
+
+const toeflVocabularyBank = [
+  {
+    word: 'meticulous',
+    meaning: 'showing extremely careful attention to detail',
+    distractors: ['highly speculative and uncertain', 'temporarily irrelevant', 'emotionally impulsive'],
+  },
+  {
+    word: 'tenuous',
+    meaning: 'weak and not strongly supported by evidence',
+    distractors: ['widely accepted without debate', 'densely technical but precise', 'morally controversial'],
+  },
+  {
+    word: 'ubiquitous',
+    meaning: 'present or encountered nearly everywhere',
+    distractors: ['limited to one rare setting', 'difficult to classify clearly', 'hidden from observation'],
+  },
+  {
+    word: 'salient',
+    meaning: 'most noticeable or especially important',
+    distractors: ['historically outdated', 'deliberately concealed', 'indirectly quantified'],
+  },
+  {
+    word: 'mitigate',
+    meaning: 'reduce the severity or impact of something',
+    distractors: ['intensify without warning', 'delay indefinitely', 'document neutrally'],
+  },
+  {
+    word: 'pragmatic',
+    meaning: 'guided by practical results rather than theory alone',
+    distractors: ['hostile to all compromise', 'concerned only with aesthetics', 'dependent on intuition only'],
+  },
+  {
+    word: 'lucid',
+    meaning: 'expressed clearly and easy to understand',
+    distractors: ['densely ambiguous', 'purely symbolic', 'highly sensational'],
+  },
+  {
+    word: 'anomalous',
+    meaning: 'deviating from what is typical or expected',
+    distractors: ['fully representative', 'carefully replicated', 'clinically urgent'],
+  },
 ];
+
+const toeflReadingPassages = [
+  {
+    topic: 'urban ecology',
+    passage: 'Researchers tracking rooftop gardens found that plots with fewer plant species still attracted many insects, but only diverse plots sustained pollinators late into the dry season. The authors therefore caution cities against treating early insect counts as proof of long-term ecological resilience.',
+    question: 'Which inference is best supported by the passage?',
+    answer: 'Early biodiversity indicators may overstate how stable the ecosystem will remain later.',
+    distractors: [
+      'Any rooftop garden automatically restores a city ecosystem completely.',
+      'Pollinator decline occurs only in cities with no gardens at all.',
+      'The authors reject insect counting as a useless method in every context.',
+    ],
+    explanation: 'The passage contrasts early counts with long-term resilience, so the supported inference is the caution against overinterpreting early signals.',
+  },
+  {
+    topic: 'science communication',
+    passage: 'When the museum replaced dense labels with layered captions, novice visitors remembered more of the main claim, while advanced visitors continued reading the optional technical notes. The curators concluded that clarity need not eliminate complexity if information is staged rather than removed.',
+    question: 'What can be inferred from the passage?',
+    answer: 'Presenting information in layers can improve access without necessarily oversimplifying the content.',
+    distractors: [
+      'Advanced visitors avoided every exhibit with simplified labels.',
+      'Technical notes should never be offered to general audiences.',
+      'Visitor memory depends only on exhibit length, not design.',
+    ],
+    explanation: 'The conclusion explicitly links clarity with preserved complexity through staged information.',
+  },
+  {
+    topic: 'historical linguistics',
+    passage: 'A corpus study showed that merchants adopted the new accounting term decades before government clerks did. Because the earliest uses cluster in shipping records rather than official decrees, the authors argue that administrative language may sometimes follow commercial practice instead of directing it.',
+    question: 'Which inference is most justified?',
+    answer: 'Institutional vocabulary can spread upward from practical trade usage rather than only downward from state policy.',
+    distractors: [
+      'Government clerks refused to use any new terminology.',
+      'Shipping records are always more reliable than decrees.',
+      'The accounting term disappeared once officials adopted it.',
+    ],
+    explanation: 'The evidence supports a bottom-up pathway of adoption, not the extreme alternatives.',
+  },
+  {
+    topic: 'behavioral economics',
+    passage: 'Participants saved more money when reminders highlighted the future inconvenience of being unprepared, yet the effect faded after three months unless they also set a concrete transfer date. The authors propose that emotion may trigger intention, but routines stabilize it.',
+    question: 'What does the passage most strongly suggest?',
+    answer: 'Emotional prompts may initiate behavior change, but durable follow-through depends on procedural commitment.',
+    distractors: [
+      'Savings behavior is unaffected by the timing of reminders.',
+      'Participants ignored every reminder after the first month.',
+      'Concrete planning matters only when people are already wealthy.',
+    ],
+    explanation: 'The passage distinguishes between starting action and sustaining it over time.',
+  },
+];
+
+const toeflRhetoricalSets = [
+  {
+    stem: 'In a passage about marine archaeology, the author notes that one harbor ledger survived only because it was copied into a tax dispute decades later.',
+    question: 'Why did the author most likely include this detail?',
+    answer: 'To illustrate how accidental preservation can shape what evidence historians are able to study.',
+    distractors: [
+      'To argue that tax disputes were the primary cause of harbor decline.',
+      'To show that copying documents always makes them less reliable.',
+      'To shift the passage away from archaeology and toward maritime law only.',
+    ],
+    explanation: 'The sentence functions as support for the argument about the uneven survival of evidence.',
+  },
+  {
+    stem: 'In a passage on renewable grids, the author briefly contrasts batteries with demand-response programs before returning to storage costs.',
+    question: 'What is the rhetorical purpose of that contrast?',
+    answer: 'To clarify that grid flexibility can come from more than one strategy before focusing on one of them.',
+    distractors: [
+      'To prove that storage costs are irrelevant to renewable adoption.',
+      'To suggest that demand-response has replaced all battery research.',
+      'To introduce an unrelated criticism of electricity pricing.',
+    ],
+    explanation: 'The contrast broadens the frame, then helps the reader understand why the author narrows back to storage.',
+  },
+  {
+    stem: 'In a paragraph about medieval universities, the author inserts a sentence explaining that lectures were often copied by students from memory rather than from distributed notes.',
+    question: 'Why is that sentence included?',
+    answer: 'To explain a practical condition that helps account for variation in surviving texts.',
+    distractors: [
+      'To claim that medieval students opposed formal lectures entirely.',
+      'To argue that memory-based learning is superior in modern universities.',
+      'To identify the single oldest manuscript in the archive.',
+    ],
+    explanation: 'The inserted detail explains the mechanism behind textual variation.',
+  },
+  {
+    stem: 'In an economics passage, the author mentions one city that reduced congestion after changing bus lane enforcement, then immediately notes that the result may not generalize to cities with different commuting patterns.',
+    question: 'What is the function of the second sentence?',
+    answer: 'To qualify the example so the reader does not overgeneralize from a single case.',
+    distractors: [
+      'To dismiss the city example as fabricated evidence.',
+      'To show that commuting patterns never affect policy outcomes.',
+      'To argue that bus lanes are less important than subway fares in every city.',
+    ],
+    explanation: 'The author is limiting the scope of the example, not rejecting it.',
+  },
+];
+
+const academicEnglishConnectorSets = [
+  {
+    prompt: 'The findings are not conclusive; ___, they still justify a more cautious reanalysis of the {noun}.',
+    answer: 'nevertheless',
+    rationale: 'there is a contrast between limitation and continuing value',
+    distractors: ['likewise', 'thereby', 'meanwhile'],
+  },
+  {
+    prompt: 'The survey instrument was revised after piloting; ___, the response rate improved in the second cohort.',
+    answer: 'consequently',
+    rationale: 'the second clause states a direct result of the revision',
+    distractors: ['whereas', 'namely', 'instead'],
+  },
+  {
+    prompt: 'The first article emphasizes policy diffusion, ___ the second focuses on institutional resistance.',
+    answer: 'whereas',
+    rationale: 'the sentence contrasts two parallel clauses',
+    distractors: ['therefore', 'moreover', 'otherwise'],
+  },
+  {
+    prompt: 'The model is parsimonious and empirically stable; ___, it remains interpretable for non-specialist readers.',
+    answer: 'moreover',
+    rationale: 'the author adds a reinforcing point rather than a contrast',
+    distractors: ['nevertheless', 'instead', 'otherwise'],
+  },
+  {
+    prompt: 'Writers must define their key terms precisely; ___, later comparisons may become internally inconsistent.',
+    answer: 'otherwise',
+    rationale: 'the second clause warns about the consequence if the first is ignored',
+    distractors: ['meanwhile', 'moreover', 'consequently'],
+  },
+];
+
+const academicEnglishTopics = {
+  findings: ['findings', 'estimates', 'conclusions', 'projections', 'observations'],
+  actions: ['recalibrated', 'contextualized', 'substantiated', 'reframed', 'triangulated'],
+  nouns: ['assumptions', 'methodology', 'sampling frame', 'causal claim', 'baseline model'],
+  audiences: ['postgraduate readers', 'reviewers', 'seminar participants', 'policy analysts', 'thesis examiners'],
+  lenses: ['implicit bias', 'scope limitation', 'causal overreach', 'hidden assumptions', 'disciplinary nuance'],
+};
+
+const simakReadingPassages = [
+  {
+    passage: 'The reviewer acknowledges that the archive is incomplete, yet argues that its gaps are patterned rather than random: records from ordinary households disappear most often, while tax disputes and inheritance claims remain. The article therefore warns that silence in the archive may reveal power structures as much as missing paperwork.',
+    question: 'Which conclusion is best supported by the passage?',
+    answer: 'Missing records can itself be evidence when the absence follows a social pattern.',
+    distractors: [
+      'Tax disputes provide an unbiased picture of all households.',
+      'Ordinary households produced no written records at all.',
+      'Incomplete archives should be excluded from historical analysis entirely.',
+    ],
+    explanation: 'The author treats patterned absence as analytically meaningful, not as a reason to abandon interpretation.',
+  },
+  {
+    passage: 'A seminar compared two abstracts with identical findings. Participants judged one more credible because it explicitly limited its claims and separated observed results from broader speculation. The instructor concluded that precision can strengthen persuasion by signaling intellectual control rather than weakness.',
+    question: 'What inference is most reasonable?',
+    answer: 'Careful qualification can increase credibility in academic writing.',
+    distractors: [
+      'Readers prefer abstracts that avoid all mention of limitations.',
+      'Speculation is always more persuasive than evidence.',
+      'Credibility depends only on the number of references cited.',
+    ],
+    explanation: 'The passage links credibility to disciplined claim-making, not exaggeration.',
+  },
+  {
+    passage: 'The department moved key definitions from footnotes into the main text. Students then performed better on application questions but not on memorization items, suggesting that the change helped them use concepts while reading rather than simply recall terms afterward.',
+    question: 'Which statement is most strongly supported?',
+    answer: 'Making definitions more visible improved conceptual application more than rote recall.',
+    distractors: [
+      'Students ignored the main text once definitions were moved.',
+      'Footnotes are unsuitable for all forms of academic writing.',
+      'Application questions are easier than memorization items by definition.',
+    ],
+    explanation: 'The score pattern differentiates conceptual use from memorization.',
+  },
+  {
+    passage: 'An editor rejected several vivid but vague verbs from a manuscript and replaced them with narrower terms. Although the prose became less dramatic, peer reviewers reported that the argument was easier to evaluate because each claim now specified who acted, under what conditions, and with what evidence.',
+    question: 'What does the passage imply?',
+    answer: 'Precision in wording can make an argument more assessable even if it sounds less dramatic.',
+    distractors: [
+      'Peer reviewers value style over accuracy in every discipline.',
+      'Vivid verbs are inherently inappropriate in academic prose.',
+      'Detailed wording guarantees that reviewers will agree with a claim.',
+    ],
+    explanation: 'The implication concerns evaluability through precision, not guaranteed agreement.',
+  },
+];
+
+const ukmppdCaseTemplates = [
+  {
+    stase: 'Penyakit Dalam',
+    stem: ({ age, symptom, duration, ekg, access }) => `Pria ${age} tahun datang dengan ${symptom} sejak ${duration}, ${ekg}, dan fasilitas reperfusi definitif dapat dicapai dalam ${access}.`,
+    answer: 'Aktifkan tata laksana sindrom koroner akut segera, berikan terapi awal berbasis guideline, dan percepat reperfusi.',
+    distractors: [
+      'Tunda terapi antiplatelet sampai seluruh biomarker serial selesai walaupun gambaran klinis sangat khas.',
+      'Pulangkan pasien dengan analgesik karena nyeri sudah sedikit berkurang di IGD.',
+      'Fokus pada observasi EKG ulang besok pagi tanpa strategi reperfusi.',
+    ],
+    explanation: 'Kasus sulit UKMPPD pada kardiovaskular menilai prioritas reperfusi berbasis waktu, bukan sekadar mengenali diagnosis.',
+    variants: {
+      age: [52, 58, 63, 67],
+      symptom: ['nyeri dada tipikal menjalar ke lengan kiri', 'rasa tertekan retrosternal disertai diaforesis', 'nyeri dada hebat dengan mual dan keringat dingin', 'keluhan dada berat yang muncul saat istirahat'],
+      duration: ['70 menit', '95 menit', '2 jam', '110 menit'],
+      ekg: ['EKG menunjukkan elevasi ST inferior', 'EKG memperlihatkan elevasi ST anteroseptal', 'EKG konsisten dengan STEMI inferior posterior', 'EKG menunjukkan elevasi ST luas di prekordial'],
+      access: ['45 menit', '60 menit', '75 menit', '90 menit'],
+    },
+  },
+  {
+    stase: 'Bedah',
+    stem: ({ mechanism, pressure, imaging, response }) => `Pasien trauma ${mechanism} tiba dengan tekanan darah ${pressure}, ${imaging}, dan ${response} setelah resusitasi awal.`,
+    answer: 'Lanjutkan damage control resuscitation dan bawa ke operasi emergensi tanpa menunda untuk pencitraan lanjutan.',
+    distractors: [
+      'Tunggu CT-scan lengkap terlebih dahulu karena operasi tanpa CT dianggap terlalu agresif.',
+      'Lanjutkan observasi serial sambil menilai nyeri selama beberapa jam sebelum keputusan definitif.',
+      'Berikan sedasi dan rencanakan pulang jika FAST tidak diulang dalam 30 menit.',
+    ],
+    explanation: 'Trauma dengan instabilitas hemodinamik dan bukti perdarahan intraabdomen menuntut keputusan definitif cepat.',
+    variants: {
+      mechanism: ['tumpul abdomen akibat kecelakaan lalu lintas', 'penetrans abdomen akibat luka tusuk', 'tumpul multisistem pascajatuh dari ketinggian', 'tumpul abdomen setelah tertimpa benda berat'],
+      pressure: ['80/50 mmHg', '85/55 mmHg', '78/46 mmHg', '90/60 mmHg dengan takikardi'],
+      imaging: ['FAST positif di Morrison pouch', 'FAST positif dengan cairan bebas pelvis', 'pemeriksaan FAST menunjukkan cairan bebas intraabdomen', 'temuan FAST mengarah ke hemoperitoneum'],
+      response: ['respons hemodinamik minimal', 'tekanan darah hanya naik sesaat', 'perbaikan sementara lalu kembali hipotensi', 'respon transien terhadap bolus cairan'],
+    },
+  },
+  {
+    stase: 'Anak',
+    stem: ({ age, complaint, hydration, ability }) => `Anak ${age} tahun datang dengan ${complaint}; pemeriksaan menunjukkan ${hydration}, dan pasien ${ability}.`,
+    answer: 'Nilai sebagai dehidrasi ringan-sedang dan mulai rehidrasi oral terukur sambil memantau tanda bahaya.',
+    distractors: [
+      'Langsung berikan antibiotik intravena rutin tanpa menilai status hidrasi.',
+      'Tunda cairan oral karena semua diare akut pada anak harus dipuasakan sementara.',
+      'Observasi di rumah tanpa edukasi cairan maupun tanda bahaya karena masih sadar.',
+    ],
+    explanation: 'UKMPPD pediatri sering menguji klasifikasi dehidrasi dan pilihan rehidrasi yang aman.',
+    variants: {
+      age: [2, 3, 4, 5],
+      complaint: ['diare akut 6 kali sejak pagi', 'muntah-diare sejak semalam', 'BAB cair berulang selama 24 jam', 'gastroenteritis akut dengan intake menurun'],
+      hydration: ['mata cekung dan turgor kembali lambat', 'mukosa mulut kering dengan turgor menurun', 'haus namun masih sadar baik dengan turgor melambat', 'nadi masih teraba baik dengan tanda dehidrasi ringan-sedang'],
+      ability: ['masih bisa minum', 'masih mau minum sedikit demi sedikit', 'dapat menerima cairan oral', 'tidak tampak letargis dan masih dapat minum'],
+    },
+  },
+  {
+    stase: 'Obstetri',
+    stem: ({ gestation, pressure, redFlag, urine }) => `Ibu hamil ${gestation} minggu datang dengan tekanan darah ${pressure}, ${redFlag}, dan ${urine}.`,
+    answer: 'Stabilisasi preeklamsia berat dengan MgSO4, kontrol tekanan darah, dan rencanakan terminasi sesuai indikasi maternal-fetal.',
+    distractors: [
+      'Pulangkan dengan antihipertensi oral tunggal tanpa profilaksis kejang karena usia kehamilan belum aterm.',
+      'Tunggu proteinuria 24 jam sebelum memulai tata laksana meskipun terdapat tanda berat.',
+      'Fokus pada istirahat total tanpa evaluasi kebutuhan terminasi kehamilan.',
+    ],
+    explanation: 'Kasus obstetri level sulit menilai stabilisasi ibu dahulu, kemudian keputusan terminasi berbasis indikasi.',
+    variants: {
+      gestation: [32, 34, 35, 37],
+      pressure: ['170/110 mmHg', '168/112 mmHg', '174/108 mmHg', '172/114 mmHg'],
+      redFlag: ['nyeri kepala berat dan pandangan kabur', 'epigastric pain dengan refleks meningkat', 'nyeri kepala hebat disertai hiperrefleksia', 'keluhan visual dan nyeri ulu hati'],
+      urine: ['proteinuria ++', 'proteinuria +++', 'dipstick protein 2+', 'urinalisis menunjukkan protein signifikan'],
+    },
+  },
+  {
+    stase: 'Neurologi',
+    stem: ({ onset, deficit, imaging, pressure }) => `Pasien datang ${onset} setelah onset ${deficit}; CT kepala non-kontras ${imaging} dan tekanan darah ${pressure}.`,
+    answer: 'Lakukan penilaian cepat kontraindikasi dan evaluasi reperfusi akut sesegera mungkin.',
+    distractors: [
+      'Tunda seluruh intervensi karena semua stroke harus diobservasi 24 jam lebih dulu.',
+      'Berikan antikoagulan penuh segera tanpa menilai jenis stroke dan kontraindikasi.',
+      'Pulangkan setelah gejala sedikit membaik karena CT awal belum menunjukkan perdarahan.',
+    ],
+    explanation: 'Fokusnya adalah time-sensitive pathway pada stroke iskemik akut setelah perdarahan tersingkir.',
+    variants: {
+      onset: ['90 menit', '2 jam', '2,5 jam', '3 jam'],
+      deficit: ['hemiparesis kanan dan afasia', 'hemiparesis kiri dengan deviasi wajah', 'kelemahan satu sisi tubuh mendadak', 'defisit neurologis fokal akut'],
+      imaging: ['tanpa perdarahan', 'tidak menunjukkan perdarahan akut', 'negatif untuk perdarahan intraserebral', 'belum tampak perdarahan'],
+      pressure: ['170/100 mmHg', '165/95 mmHg', '178/102 mmHg', '160/98 mmHg'],
+    },
+  },
+  {
+    stase: 'Komunitas',
+    stem: ({ disease, pattern, location, weeks }) => `Puskesmas melaporkan ${pattern} kasus ${disease} di ${location} selama ${weeks} minggu berturut-turut.`,
+    answer: 'Verifikasi diagnosis dan definisi kasus dahulu, lalu konfirmasi KLB sebelum intervensi populasi berskala luas.',
+    distractors: [
+      'Langsung umumkan wabah tanpa validasi data karena peningkatan kasus sudah cukup.',
+      'Tunggu laporan bulanan selesai seluruhnya sebelum melakukan langkah epidemiologi awal.',
+      'Batasi respons pada terapi individu tanpa surveilans lanjutan maupun pencarian kasus.',
+    ],
+    explanation: 'Kasus komunitas menguji urutan respon wabah: validasi, definisi kasus, konfirmasi, lalu intervensi.',
+    variants: {
+      disease: ['DBD', 'hepatitis A', 'diare akut', 'chikungunya'],
+      pattern: ['lonjakan', 'peningkatan tajam', 'klaster baru', 'kenaikan bermakna'],
+      location: ['satu kelurahan padat penduduk', 'wilayah kerja pesisir', 'dua RW yang berdekatan', 'satu kompleks sekolah dan sekitarnya'],
+      weeks: [2, 3, 4, 5],
+    },
+  },
+  {
+    stase: 'Psikiatri',
+    stem: ({ patient, risk, history }) => `${patient} datang ke IGD dengan ${risk}; keluarga melaporkan ${history}.`,
+    answer: 'Pastikan keamanan pasien, nilai risiko bunuh diri secara aktif, dan pertimbangkan rawat/involuntary protection bila perlu.',
+    distractors: [
+      'Fokus pada pemberian vitamin dan jadwalkan kontrol rutin bulan depan tanpa asesmen risiko.',
+      'Biarkan pasien pulang sendiri karena ia masih dapat menjawab pertanyaan dasar.',
+      'Tunda eksplorasi ide bunuh diri agar pasien tidak tersinggung oleh pertanyaan langsung.',
+    ],
+    explanation: 'Kasus psikiatri emergensi menilai keselamatan, asesmen risiko, dan kebutuhan proteksi segera.',
+    variants: {
+      patient: ['Mahasiswa 22 tahun', 'Pria 30 tahun', 'Perempuan 27 tahun', 'Karyawan 35 tahun'],
+      risk: ['ucapan ingin mengakhiri hidup disertai rencana spesifik', 'percobaan overdosis ringan beberapa jam sebelumnya', 'agitasi berat setelah menyatakan niat bunuh diri', 'depresi berat dengan akses ke alat berbahaya di rumah'],
+      history: ['menarik diri selama dua minggu dan tidak tidur semalaman', 'kehilangan pekerjaan baru-baru ini dan makin putus asa', 'pernah melakukan percobaan serupa tahun lalu', 'ada pesan perpisahan yang ditemukan keluarga'],
+    },
+  },
+  {
+    stase: 'Paru',
+    stem: ({ history, vitals, finding, gas }) => `Pasien dengan riwayat ${history} datang sesak; didapatkan ${vitals}, ${finding}, dan analisis gas darah menunjukkan ${gas}.`,
+    answer: 'Tata laksana eksaserbasi berat secara segera dengan oksigen terukur, bronkodilator, steroid, dan evaluasi kebutuhan ventilasi.',
+    distractors: [
+      'Tunda bronkodilator sampai sputum culture keluar agar terapi lebih spesifik.',
+      'Berikan sedasi penuh untuk mengurangi rasa panik tanpa menilai ventilasi.',
+      'Pulangkan dengan obat batuk karena wheezing dapat membaik spontan.',
+    ],
+    explanation: 'Kasus paru sulit menekankan stabilisasi respirasi, titrasi oksigen, dan antisipasi gagal napas.',
+    variants: {
+      history: ['asma persisten', 'PPOK lama', 'asma dengan rawat inap berulang', 'PPOK perokok berat'],
+      vitals: ['takipnea 32/menit dan saturasi 88%', 'napas 34/menit dengan saturasi 86%', 'takikardi dan saturasi 89% udara bebas', 'retraksi dengan saturasi 87%'],
+      finding: ['wheezing difus', 'ekspirasi memanjang dengan wheeze bilateral', 'penggunaan otot bantu napas', 'suara napas menurun dengan mengi'],
+      gas: ['retensi CO2 ringan', 'hiperkapnia yang mulai meningkat', 'asidosis respiratorik parsial', 'gangguan ventilasi tipe II awal'],
+    },
+  },
+];
+
+const fillTemplate = (template, values) => template.replace(/\{(\w+)\}/g, (_, key) => values[key]);
+
+const buildToeflStructureQuestion = (moduleName, index, seed) => {
+  const cycle = Math.floor(index / 5);
+  const pattern = toeflStructureScenarios[index % toeflStructureScenarios.length];
+  const values = {
+    subject: pick(toeflStructureLexicon.subjects, cycle + seed),
+    event: pick(toeflStructureLexicon.events, cycle * 3 + seed),
+    artifact: pick(toeflStructureLexicon.artifacts, cycle * 5 + seed),
+    committee: pick(toeflStructureLexicon.committees, cycle * 7 + seed),
+    focus: pick(toeflStructureLexicon.focuses, cycle * 11 + seed),
+    headNoun: pick(toeflStructureLexicon.headNouns, cycle * 13 + seed),
+    venue: pick(toeflStructureLexicon.venues, cycle * 17 + seed),
+    policy: pick(toeflStructureLexicon.policies, cycle * 19 + seed),
+    milestone: pick(toeflStructureLexicon.milestones, cycle * 23 + seed),
+  };
+  const verb = pattern.verbs ? pick(pattern.verbs, cycle * 29 + seed) : null;
+  const enrichedValues = {
+    ...values,
+    verbBase: verb?.base,
+    verbPast: verb?.past,
+    verbIng: verb?.ing,
+    verbThird: verb?.third,
+  };
+  const answer = fillTemplate(pattern.answer, enrichedValues);
+  const options = buildUniqueOptions(
+    answer,
+    pattern.distractors.map((item) => fillTemplate(item, enrichedValues)),
+    seed,
+  );
+  return {
+    prompt: `[Hard TOEFL Structure] ${fillTemplate(pattern.frame, enrichedValues)}`,
+    answer,
+    explanation: pattern.explanation,
+    options,
+  };
+};
+
+const buildToeflVocabularyQuestion = (index, seed) => {
+  const item = toeflVocabularyBank[index % toeflVocabularyBank.length];
+  const cycle = Math.floor(index / 4);
+  const contexts = [
+    'describing a research methodology',
+    'summarizing an academic lecture',
+    'evaluating a policy brief',
+    'contrasting two historical interpretations',
+    'reporting an experimental result',
+  ];
+  const context = pick(contexts, cycle + seed);
+  return {
+    prompt: `[Hard TOEFL Vocabulary] In a sentence ${context}, the word “${item.word}” is closest in meaning to...`,
+    answer: item.meaning,
+    explanation: 'TOEFL vocabulary items at a hard level reward precision against very close distractors.',
+    options: buildUniqueOptions(item.meaning, item.distractors, seed),
+  };
+};
+
+const buildToeflReadingQuestion = (index, seed) => {
+  const item = toeflReadingPassages[index % toeflReadingPassages.length];
+  const cycle = Math.floor(index / 4);
+  const frames = ['Consider the following passage.', 'Read the excerpt carefully.', 'Use the passage below to answer the question.', "Focus on the author's implied claim in the passage below."]; 
+  return {
+    prompt: `[Hard TOEFL Reading • ${item.topic}] ${pick(frames, cycle + seed)} ${item.passage} ${item.question}`,
+    answer: item.answer,
+    explanation: item.explanation,
+    options: buildUniqueOptions(item.answer, item.distractors, seed),
+  };
+};
+
+const buildToeflRhetoricQuestion = (index, seed) => {
+  const item = toeflRhetoricalSets[index % toeflRhetoricalSets.length];
+  const cycle = Math.floor(index / 4);
+  const leads = ['Within the paragraph,', 'In the broader argument,', 'At that point in the passage,', 'From a rhetorical-purpose perspective,'];
+  return {
+    prompt: `[Hard TOEFL Rhetorical Purpose] ${item.stem} ${pick(leads, cycle + seed)} ${item.question}`,
+    answer: item.answer,
+    explanation: item.explanation,
+    options: buildUniqueOptions(item.answer, item.distractors, seed),
+  };
+};
 
 const createAdvancedToeflQuestion = (moduleName, index) => {
   const n = index + 1;
   const seed = seeded(moduleName, index);
   const topic = index % 4;
-
   const variants = [
-    () => {
-      const item = toeflGrammarSets[index % toeflGrammarSets.length];
-      return {
-        prompt: `[Hard TOEFL Structure] ${item.prompt}`,
-        answer: item.answer,
-        explanation: item.explanation,
-        options: shuffleDeterministic(item.options, seed),
-      };
-    },
-    () => {
-      const [word, meaning] = toeflVocabSets[index % toeflVocabSets.length];
-      return {
-        prompt: `[Hard TOEFL Vocabulary] The word "${word}" is closest in meaning to...`,
-        answer: meaning,
-        explanation: 'TOEFL high-level vocabulary often contrasts precise academic meaning against near-synonym distractors.',
-        options: shuffleDeterministic([
-          meaning,
-          'irrelevant or trivial',
-          'emotionally unstable',
-          'entirely speculative',
-        ], seed),
-      };
-    },
-    () => ({
-      prompt: '[Hard TOEFL Reading] Which choice best reflects an inference question in academic reading?',
-      answer: 'It asks for the conclusion most strongly supported, even if it is not stated word-for-word.',
-      explanation: 'Inference items reward careful synthesis of explicit textual evidence.',
-      options: shuffleDeterministic([
-        'It asks for the conclusion most strongly supported, even if it is not stated word-for-word.',
-        'It only asks for a synonym that appears in the final paragraph.',
-        'It requires personal opinion beyond the passage.',
-        'It focuses exclusively on punctuation errors.',
-      ], seed),
-    }),
-    () => ({
-      prompt: '[Hard TOEFL Rhetoric] In a rhetorical purpose question, the test taker should primarily identify...',
-      answer: 'why the author included a sentence, example, or contrast in the argument structure',
-      explanation: 'Rhetorical purpose asks about function, not merely content recall.',
-      options: shuffleDeterministic([
-        'why the author included a sentence, example, or contrast in the argument structure',
-        'which word has the most syllables in the paragraph',
-        'how to rewrite the passage in a more informal tone',
-        'which option sounds the most persuasive personally',
-      ], seed),
-    }),
+    () => buildToeflStructureQuestion(moduleName, index, seed),
+    () => buildToeflVocabularyQuestion(index, seed),
+    () => buildToeflReadingQuestion(index, seed),
+    () => buildToeflRhetoricQuestion(index, seed),
   ];
 
   return { id: `mcq-${moduleName}-${n}`, module: moduleName, ...variants[topic]() };
@@ -1615,44 +2109,109 @@ const createAdvancedIeltsQuestion = (moduleName, index) => {
   };
 };
 
-const simakEnglishTopics = [
-  {
-    prompt: 'The findings are hardly definitive; ___, they do warrant a larger follow-up study.',
-    answer: 'nevertheless',
-    options: ['nevertheless', 'thereby', 'likewise', 'whereas'],
-    explanation: 'The second clause contrasts with the first, so a concessive connector is needed.',
-  },
-  {
-    prompt: 'Only after the dataset had been normalized ___ that the original comparison was biased.',
+const buildAcademicEnglishConnectorQuestion = (index, seed) => {
+  const cycle = Math.floor(index / 5);
+  const item = academicEnglishConnectorSets[index % academicEnglishConnectorSets.length];
+  const noun = pick(academicEnglishTopics.nouns, cycle * 5 + seed);
+  return {
+    prompt: `[Hard Academic English] ${item.prompt.replace('{noun}', noun)}`,
+    answer: item.answer,
+    explanation: `The connector is correct because ${item.rationale}.`,
+    options: buildUniqueOptions(item.answer, item.distractors, seed),
+  };
+};
+
+const buildAcademicEnglishInversionQuestion = (index, seed) => {
+  const cycle = Math.floor(index / 5);
+  const action = pick(academicEnglishTopics.actions, cycle * 7 + seed);
+  const noun = pick(academicEnglishTopics.nouns, cycle * 11 + seed);
+  return {
+    prompt: `[Hard Academic English] Only after the dataset had been ${action} ___ that the original ${noun} was internally inconsistent.`,
     answer: 'did the reviewers realize',
-    options: ['did the reviewers realize', 'the reviewers realized', 'had the reviewers realized', 'the reviewers had realized'],
-    explanation: 'Fronted negative adverbials trigger inversion in formal English.',
-  },
-  {
-    prompt: 'The proposal was praised not merely for its novelty but also for the rigor with which it ___ its assumptions.',
-    answer: 'articulated',
-    options: ['articulated', 'articulate', 'articulating', 'has articulate'],
-    explanation: 'The clause needs a simple past verb parallel to “was praised”.',
-  },
-  {
-    prompt: 'A strong postgraduate reader should distinguish between evidence that is explicit and claims that are only ___ by the author.',
+    explanation: 'Fronted restrictive adverbials trigger subject–auxiliary inversion in formal academic English.',
+    options: shuffleDeterministic([
+      'did the reviewers realize',
+      'the reviewers realized',
+      'had the reviewers realized',
+      'the reviewers had realized',
+    ], seed),
+  };
+};
+
+const buildAcademicEnglishPrecisionQuestion = (index, seed) => {
+  const cycle = Math.floor(index / 5);
+  const audience = pick(academicEnglishTopics.audiences, cycle * 13 + seed);
+  const lens = pick(academicEnglishTopics.lenses, cycle * 17 + seed);
+  return {
+    prompt: `[Hard Academic English] Skilled ${audience} distinguish between evidence that is explicit and claims that are only ___ through ${lens}.`,
     answer: 'implied',
-    options: ['implied', 'invented', 'retracted', 'duplicated'],
-    explanation: 'Academic reading at this level requires inference from implied claims.',
-  },
-];
+    explanation: 'Advanced academic reading requires separating direct statement from inference.',
+    options: shuffleDeterministic(['implied', 'retracted', 'duplicated', 'invented'], seed),
+  };
+};
+
+const buildAcademicEnglishVerbQuestion = (index, seed) => {
+  const cycle = Math.floor(index / 5);
+  const action = pick(academicEnglishTopics.actions, cycle * 19 + seed);
+  const noun = pick(academicEnglishTopics.nouns, cycle * 23 + seed);
+  return {
+    prompt: `[Hard Academic English] The proposal was praised not merely for its novelty but also for the rigor with which it ___ its ${noun}.`,
+    answer: action,
+    explanation: 'The clause requires a simple past verb parallel to the surrounding academic narrative.',
+    options: buildUniqueOptions(action, ['articulate', 'has articulated', 'articulating', 'was articulating'], seed),
+  };
+};
+
+const buildAcademicEnglishReadingQuestion = (index, seed) => {
+  const item = simakReadingPassages[index % simakReadingPassages.length];
+  const cycle = Math.floor(index / 5);
+  const leads = ['Read the following academic excerpt.', 'Consider the passage below.', 'Use the excerpt to answer the inference item.', "Focus on the author's implied academic claim below."]; 
+  return {
+    prompt: `[Hard Academic English Reading] ${pick(leads, cycle + seed)} ${item.passage} ${item.question}`,
+    answer: item.answer,
+    explanation: item.explanation,
+    options: buildUniqueOptions(item.answer, item.distractors, seed),
+  };
+};
 
 const createAdvancedSimakEnglishQuestion = (moduleName, index) => {
   const n = index + 1;
   const seed = seeded(moduleName, index);
-  const item = simakEnglishTopics[index % simakEnglishTopics.length];
+  const topic = index % 5;
+  const variants = [
+    () => buildAcademicEnglishConnectorQuestion(index, seed),
+    () => buildAcademicEnglishInversionQuestion(index, seed),
+    () => buildAcademicEnglishVerbQuestion(index, seed),
+    () => buildAcademicEnglishPrecisionQuestion(index, seed),
+    () => buildAcademicEnglishReadingQuestion(index, seed),
+  ];
+
   return {
     id: `mcq-${moduleName}-${n}`,
     module: moduleName,
-    prompt: `[Hard Academic English] ${item.prompt}`,
-    answer: item.answer,
-    explanation: item.explanation,
-    options: shuffleDeterministic(item.options, seed),
+    ...variants[topic](),
+  };
+};
+
+const createAdvancedUkmppdQuestion = (moduleName, index) => {
+  const n = index + 1;
+  const seed = seeded(moduleName, index);
+  const template = ukmppdCaseTemplates[index % ukmppdCaseTemplates.length];
+  const cycle = Math.floor(index / ukmppdCaseTemplates.length);
+  const values = Object.fromEntries(
+    Object.entries(template.variants).map(([key, choices], offset) => [
+      key,
+      pick(choices, cycle * (offset + 3) + seed),
+    ]),
+  );
+
+  return {
+    id: `mcq-${moduleName}-${n}`,
+    module: moduleName,
+    prompt: `[Sulit • ${template.stase}] ${template.stem(values)} Langkah paling tepat adalah...`,
+    answer: template.answer,
+    explanation: template.explanation,
+    options: buildUniqueOptions(template.answer, template.distractors, seed),
   };
 };
 
@@ -1694,58 +2253,6 @@ const createAdvancedSpanishQuestion = (moduleName, index) => {
     answer: item.answer,
     explanation: item.explanation,
     options: shuffleDeterministic(item.options, seed),
-  };
-};
-
-const ukmppdCases = [
-  {
-    stase: 'Penyakit Dalam',
-    stem: 'Pria 60 tahun dengan nyeri dada tipikal 90 menit, elevasi ST di inferior lead, fasilitas mampu PCI berjarak 1 jam.',
-    answer: 'Aktifkan jalur reperfusi segera sambil memberikan DAPT dan terapi suportif terarah.',
-  },
-  {
-    stase: 'Bedah',
-    stem: 'Pasien trauma tumpul abdomen hipotensi, FAST positif, respons resusitasi minimal.',
-    answer: 'Lakukan damage control resuscitation dan laparotomi emergensi tanpa menunda untuk CT.',
-  },
-  {
-    stase: 'Anak',
-    stem: 'Balita diare akut dengan turgor kembali lambat, mata cekung, masih dapat minum.',
-    answer: 'Klasifikasikan sebagai dehidrasi ringan-sedang dan jalankan rehidrasi oral terukur.',
-  },
-  {
-    stase: 'Obstetri',
-    stem: 'Ibu hamil 35 minggu dengan tekanan darah 170/110, nyeri kepala berat, proteinuria.',
-    answer: 'Stabilisasi preeklamsia berat dengan MgSO4, kontrol tekanan darah, lalu rencanakan terminasi sesuai indikasi.',
-  },
-  {
-    stase: 'Neurologi',
-    stem: 'Pasien datang 2 jam setelah onset hemiparesis, CT kepala non-kontras tanpa perdarahan.',
-    answer: 'Skrining kontraindikasi dan evaluasi trombolisis intravena secepat mungkin.',
-  },
-  {
-    stase: 'Komunitas',
-    stem: 'Puskesmas melihat lonjakan DBD pada tiga minggu berturut-turut di satu kelurahan.',
-    answer: 'Verifikasi diagnosis, tetapkan definisi kasus, lalu konfirmasi KLB sebelum intervensi populasi.',
-  },
-];
-
-const createAdvancedUkmppdQuestion = (moduleName, index) => {
-  const n = index + 1;
-  const seed = seeded(moduleName, index);
-  const item = ukmppdCases[index % ukmppdCases.length];
-  return {
-    id: `mcq-${moduleName}-${n}`,
-    module: moduleName,
-    prompt: `[Sulit • ${item.stase}] ${item.stem} Langkah paling tepat adalah...`,
-    answer: item.answer,
-    explanation: 'Fokus UKMPPD tingkat sulit adalah prioritas klinis, stabilisasi, dan keputusan aman berbasis waktu.',
-    options: shuffleDeterministic([
-      item.answer,
-      'Observasi pasif sambil menunggu semua pemeriksaan lanjutan selesai terlebih dahulu.',
-      'Memberikan terapi simptomatik saja lalu evaluasi ulang 24 jam tanpa stratifikasi risiko.',
-      'Menunda keputusan hingga seluruh konsultan hadir walaupun kondisi memiliki red flag.',
-    ], seed),
   };
 };
 
