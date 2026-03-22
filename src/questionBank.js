@@ -110,6 +110,7 @@ const shuffleDeterministic = (items, seed) => {
 const seeded = (moduleName, index, step = 0) => hashString(`${moduleName}-${index}-${step}`);
 const pick = (list, seed) => list[Math.abs(seed) % list.length];
 const formatPercent = (value) => `${Number(value.toFixed(2)).toString().replace(/\.00$/, '')}%`;
+const formatRupiah = (value) => `Rp ${Math.round(value).toLocaleString('id-ID')}`;
 const gcd = (a, b) => (b === 0 ? a : gcd(b, a % b));
 
 const buildNumericOptions = (answer, variants, seed, formatter = (value) => String(value)) => {
@@ -384,127 +385,324 @@ const createAdvancedSimakMathQuestion = (moduleName, index) => {
 
 const createAdvancedLpdpMathQuestion = (moduleName, index) => {
   const n = index + 1;
-  const topic = index % 8;
+  const topic = index % 16;
+  const cycle = Math.floor(index / 16);
   const seed = seeded(moduleName, index);
-  const context = pick(['proyeksi biaya studi', 'valuasi dana abadi', 'analisis biaya hidup', 'cashflow proyek sosial', 'anggaran mobilitas akademik'], seed);
+  const context = pick([
+    'perencanaan biaya studi dua tahun',
+    'proyeksi dana hidup lintas semester',
+    'cashflow proyek pemberdayaan desa',
+    'simulasi endowment mini kampus',
+    'anggaran riset kolaboratif',
+    'evaluasi skema matching fund',
+    'program inkubasi wirausaha sosial',
+    'peta biaya mobilitas akademik',
+  ], seed + cycle);
 
   const variants = [
     () => {
-      const principal = ((seed % 9) + 12) * 1_000_000;
-      const rate = ((seed >> 2) % 5) + 6;
+      const principal = ((seed % 8) + 18 + cycle) * 1_000_000;
+      const rate = ((seed >> 2) % 4) + 6;
       const years = ((seed >> 4) % 3) + 2;
-      const answer = Math.round(principal * ((1 + (rate / 100)) ** years));
+      const admin = (((seed >> 6) % 4) + 1) * 250_000;
+      const gross = principal * ((1 + (rate / 100)) ** years);
+      const answer = Math.round(gross - admin);
       return {
-        prompt: `[Sulit • Bunga Majemuk] Dalam ${context}, dana Rp ${principal.toLocaleString('id-ID')} tumbuh ${rate}% per tahun selama ${years} tahun. Nilai akhirnya mendekati...`,
-        answer: `Rp ${answer.toLocaleString('id-ID')}`,
-        explanation: `A = P(1+r)^t = ${principal} × (1+${rate}/100)^${years} ≈ ${answer}.`,
+        prompt: `[Sulit • Bunga Majemuk Bersih] Dalam ${context}, dana awal ${formatRupiah(principal)} ditempatkan pada instrumen dengan imbal hasil ${rate}% per tahun selama ${years} tahun. Jika pada akhir periode ada biaya administrasi tetap ${formatRupiah(admin)}, nilai bersih akhirnya adalah...`,
+        answer: formatRupiah(answer),
+        explanation: `Hitung dulu nilai majemuk kotor P(1+r)^t = ${formatRupiah(gross)}, lalu kurangi biaya tetap ${formatRupiah(admin)} sehingga diperoleh ${formatRupiah(answer)}.`,
         options: shuffleDeterministic([
-          `Rp ${answer.toLocaleString('id-ID')}`,
-          `Rp ${(answer + 750000).toLocaleString('id-ID')}`,
-          `Rp ${(answer - 500000).toLocaleString('id-ID')}`,
-          `Rp ${Math.round(principal * (1 + (rate / 100) * years)).toLocaleString('id-ID')}`,
+          formatRupiah(answer),
+          formatRupiah(gross),
+          formatRupiah(answer + admin),
+          formatRupiah(Math.round(principal * (1 + (rate / 100) * years) - admin)),
         ], seed),
       };
     },
     () => {
-      const present = ((seed % 8) + 9) * 1_000_000;
+      const target = ((seed % 7) + 24 + cycle) * 1_000_000;
       const rate = ((seed >> 2) % 4) + 5;
-      const years = ((seed >> 4) % 4) + 2;
-      const answer = Math.round(present / ((1 + (rate / 100)) ** years));
+      const years = ((seed >> 4) % 3) + 2;
+      const inflation = ((seed >> 6) % 3) + 3;
+      const nominalFuture = target * ((1 + (inflation / 100)) ** years);
+      const answer = Math.round(nominalFuture / ((1 + (rate / 100)) ** years));
       return {
-        prompt: `[Sulit • Present Value] Target ${context} memerlukan Rp ${present.toLocaleString('id-ID')} pada ${years} tahun lagi. Jika tingkat diskonto ${rate}% per tahun, present value-nya adalah...`,
-        answer: `Rp ${answer.toLocaleString('id-ID')}`,
-        explanation: `PV = FV / (1+r)^n = ${present} / (1+${rate}/100)^${years} ≈ ${answer}.`,
+        prompt: `[Sulit • Present Value Riil] Target biaya pada ${context} saat ini adalah ${formatRupiah(target)}. Bila biaya tersebut diperkirakan naik ${inflation}% per tahun selama ${years} tahun dan dana didiskontokan dengan tingkat ${rate}% per tahun, present value yang perlu disiapkan sekarang adalah...`,
+        answer: formatRupiah(answer),
+        explanation: `Naikkan dulu target menjadi future cost riil ${formatRupiah(nominalFuture)}, lalu diskontokan kembali: PV = FV/(1+r)^n = ${formatRupiah(answer)}.`,
         options: shuffleDeterministic([
-          `Rp ${answer.toLocaleString('id-ID')}`,
-          `Rp ${(answer + 400000).toLocaleString('id-ID')}`,
-          `Rp ${(answer - 300000).toLocaleString('id-ID')}`,
-          `Rp ${Math.round(present / (1 + (rate / 100) * years)).toLocaleString('id-ID')}`,
+          formatRupiah(answer),
+          formatRupiah(Math.round(target / ((1 + (rate / 100)) ** years))),
+          formatRupiah(Math.round(nominalFuture)),
+          formatRupiah(Math.round(target * ((1 + (inflation - rate) / 100) ** years))),
         ], seed),
       };
     },
     () => {
-      const total = ((seed % 6) + 10) * 12;
-      const ratioA = ((seed >> 2) % 4) + 3;
-      const ratioB = ((seed >> 4) % 5) + 2;
-      const ratioC = ((seed >> 6) % 3) + 2;
-      const parts = ratioA + ratioB + ratioC;
-      const answer = (total * ratioB) / parts;
+      const deposit = (((seed % 6) + 5 + cycle) * 500_000);
+      const rate = ((seed >> 2) % 4) + 4;
+      const years = ((seed >> 4) % 3) + 3;
+      const multiplier = ((((1 + (rate / 100)) ** years) - 1) / (rate / 100));
+      const answer = Math.round(deposit * multiplier);
       return {
-        prompt: `[Sulit • Rasio Tiga Komponen] Pada ${context}, anggaran ${total} unit dibagi untuk tiga agenda dengan rasio ${ratioA}:${ratioB}:${ratioC}. Porsi agenda kedua adalah...`,
-        answer: String(answer),
-        explanation: `Total bagian = ${parts}; bagian kedua = ${total} × ${ratioB}/${parts} = ${answer}.`,
-        options: buildNumericOptions(answer, [answer + ratioA, answer - ratioC, total / 3], seed),
-      };
-    },
-    () => {
-      const base = ((seed % 7) + 8) * 100_000;
-      const up = ((seed >> 3) % 7) + 8;
-      const down = ((seed >> 5) % 5) + 4;
-      const answer = Math.round(base * (1 + (up / 100)) * (1 - (down / 100)));
-      return {
-        prompt: `[Sulit • Persentase Bertingkat] Untuk ${context}, biaya awal Rp ${base.toLocaleString('id-ID')} naik ${up}% lalu dikoreksi turun ${down}%. Biaya akhir adalah...`,
-        answer: `Rp ${answer.toLocaleString('id-ID')}`,
-        explanation: `Kenaikan dan penurunan berturut-turut: ${base} × ${1 + (up / 100)} × ${1 - (down / 100)} ≈ ${answer}.`,
+        prompt: `[Sulit • Anuitas Tabungan] Dalam ${context}, seorang peserta menabung ${formatRupiah(deposit)} pada akhir setiap tahun selama ${years} tahun ke instrumen berimbal hasil ${rate}% per tahun. Nilai masa depan tabungan itu paling dekat dengan...`,
+        answer: formatRupiah(answer),
+        explanation: `Gunakan future value annuity immediate: A × [((1+r)^n - 1)/r] = ${formatRupiah(answer)}.`,
         options: shuffleDeterministic([
-          `Rp ${answer.toLocaleString('id-ID')}`,
-          `Rp ${(answer + 150000).toLocaleString('id-ID')}`,
-          `Rp ${(answer - 125000).toLocaleString('id-ID')}`,
-          `Rp ${Math.round(base * (1 + ((up - down) / 100))).toLocaleString('id-ID')}`,
+          formatRupiah(answer),
+          formatRupiah(Math.round(deposit * years)),
+          formatRupiah(Math.round(deposit * ((1 + (rate / 100)) ** years))),
+          formatRupiah(Math.round(answer + deposit)),
         ], seed),
       };
     },
     () => {
-      const fixed = ((seed % 6) + 6) * 100_000;
-      const variable = ((seed >> 2) % 5) + 3;
-      const price = variable + ((seed >> 4) % 5) + 4;
-      const answer = Math.ceil(fixed / (price - variable));
+      const fixed = ((seed % 5) + 12 + cycle) * 1_000_000;
+      const variable = (((seed >> 2) % 4) + 4) * 100_000;
+      const price = variable + ((((seed >> 4) % 4) + 5) * 100_000);
+      const rejectRate = (((seed >> 6) % 3) + 2) / 100;
+      const effectiveMargin = price - variable - (price * rejectRate);
+      const answer = Math.ceil(fixed / effectiveMargin);
       return {
-        prompt: `[Sulit • Break-even] Dalam ${context}, biaya tetap Rp ${fixed.toLocaleString('id-ID')}, biaya variabel per unit Rp ${variable}00.000, dan harga jual Rp ${price}00.000. Titik impas unit minimum adalah...`,
+        prompt: `[Sulit • Break-even dengan Reject Rate] Pada ${context}, biaya tetap ${formatRupiah(fixed)}, biaya variabel per unit ${formatRupiah(variable)}, dan harga per unit ${formatRupiah(price)}. Jika setiap unit menanggung kehilangan pendapatan rata-rata ${formatPercent(rejectRate * 100)} karena reject/retur, jumlah unit minimum untuk impas adalah...`,
         answer: `${answer} unit`,
-        explanation: `BEP = biaya tetap / (harga - biaya variabel) = ${fixed} / ${(price - variable) * 100000} = ${answer}.`,
-        options: shuffleDeterministic([`${answer} unit`, `${answer + 1} unit`, `${Math.max(1, answer - 1)} unit`, `${answer + 3} unit`], seed),
-      };
-    },
-    () => {
-      const mean = ((seed % 8) + 12);
-      const count = ((seed >> 2) % 5) + 5;
-      const newValue = ((seed >> 4) % 9) + 18;
-      const answer = ((mean * count) + newValue) / (count + 1);
-      return {
-        prompt: `[Sulit • Statistik] Rata-rata ${count} data pada ${context} adalah ${mean}. Jika ditambah satu data baru bernilai ${newValue}, rata-rata baru menjadi...`,
-        answer: Number(answer.toFixed(2)).toString(),
-        explanation: `Jumlah awal ${mean * count}. Tambahkan ${newValue}, lalu bagi ${count + 1}; hasil ${answer.toFixed(2)}.`,
+        explanation: `Margin efektif per unit = harga - biaya variabel - loss reject = ${formatRupiah(effectiveMargin)}. Maka BEP = ceil(${fixed}/${Math.round(effectiveMargin)}) = ${answer} unit.`,
         options: shuffleDeterministic([
-          Number(answer.toFixed(2)).toString(),
-          Number((answer + 0.5).toFixed(2)).toString(),
-          Number((answer - 0.5).toFixed(2)).toString(),
-          String(mean),
+          `${answer} unit`,
+          `${Math.max(1, answer - 1)} unit`,
+          `${answer + 2} unit`,
+          `${Math.ceil(fixed / (price - variable))} unit`,
         ], seed),
       };
     },
     () => {
-      const favorable = ((seed % 6) + 2);
-      const total = favorable + ((seed >> 2) % 6) + 5;
-      const g = gcd(favorable, total);
-      const answer = `${favorable / g}/${total / g}`;
+      const scores = [
+        ((seed % 11) + 68),
+        (((seed >> 2) % 11) + 72),
+        (((seed >> 4) % 9) + 78),
+      ];
+      const weights = [2, 3, 5];
+      const answer = Number(((scores[0] * weights[0] + scores[1] * weights[1] + scores[2] * weights[2]) / 10).toFixed(1));
       return {
-        prompt: `[Sulit • Probabilitas] Dalam ${context}, ada ${favorable} skenario keberhasilan dari ${total} skenario ekuiprobabel. Probabilitas keberhasilan paling sederhana adalah...`,
-        answer,
-        explanation: `Probabilitas = ${favorable}/${total}, sederhanakan dengan FPB ${g} menjadi ${answer}.`,
-        options: shuffleDeterministic([answer, `${favorable}/${total}`, `${favorable + 1}/${total}`, `${favorable}/${total + 1}`], seed),
+        prompt: `[Sulit • Rata-rata Tertimbang] Dalam ${context}, tiga komponen evaluasi memiliki skor ${scores.join(', ')} dengan bobot berturut-turut ${weights.join(':')}. Nilai akhir tertimbang peserta adalah...`,
+        answer: answer.toString(),
+        explanation: `Hitung jumlah berbobot lalu bagi total bobot: (${scores[0]}×2 + ${scores[1]}×3 + ${scores[2]}×5)/10 = ${answer}.`,
+        options: shuffleDeterministic([
+          answer.toString(),
+          Number((answer + 1.2).toFixed(1)).toString(),
+          Number((answer - 1.1).toFixed(1)).toString(),
+          Math.round((scores[0] + scores[1] + scores[2]) / 3).toString(),
+        ], seed),
       };
     },
     () => {
-      const workers = ((seed % 5) + 6);
-      const days = ((seed >> 2) % 7) + 8;
-      const newWorkers = workers + ((seed >> 4) % 4) + 2;
-      const answer = Number(((workers * days) / newWorkers).toFixed(2));
+      const base = ((seed % 7) + 11 + cycle) * 1_000_000;
+      const inc = ((seed >> 2) % 5) + 8;
+      const dec = ((seed >> 4) % 4) + 5;
+      const tax = ((seed >> 6) % 3) + 2;
+      const answer = Math.round(base * (1 + (inc / 100)) * (1 - (dec / 100)) * (1 + (tax / 100)));
       return {
-        prompt: `[Sulit • Perbandingan Berbalik Nilai] Dalam ${context}, ${workers} analis menyelesaikan model dalam ${days} hari. Jika menjadi ${newWorkers} analis dengan produktivitas sama, estimasi waktu adalah...`,
+        prompt: `[Sulit • Persentase Bertingkat] Pada ${context}, biaya awal ${formatRupiah(base)} naik ${inc}%, lalu didiskon ${dec}%, kemudian dikenai pajak administrasi ${tax}%. Nilai akhir yang harus dibayar adalah...`,
+        answer: formatRupiah(answer),
+        explanation: `Terapkan berurutan, bukan menjumlahkan persen: ${base} × (1+${inc}%) × (1-${dec}%) × (1+${tax}%) = ${formatRupiah(answer)}.`,
+        options: shuffleDeterministic([
+          formatRupiah(answer),
+          formatRupiah(Math.round(base * (1 + ((inc - dec + tax) / 100)))),
+          formatRupiah(Math.round(base * (1 + (inc / 100)) * (1 - (dec / 100)))),
+          formatRupiah(Math.round(answer + 200_000)),
+        ], seed),
+      };
+    },
+    () => {
+      const scholarship = ((seed % 8) + 10 + cycle) * 5;
+      const living = ((seed >> 2) % 6) + 12;
+      const books = ((seed >> 4) % 5) + 4;
+      const travel = ((seed >> 6) % 5) + 3;
+      const total = living + books + travel;
+      const g = gcd(scholarship, scholarship + total);
+      const answer = `${scholarship / g}/${(scholarship + total) / g}`;
+      return {
+        prompt: `[Sulit • Probabilitas Bersyarat] Dalam ${context}, dari ${scholarship + total} pengajuan, ${scholarship} lolos pendanaan penuh. Sisanya terbagi pada kategori living=${living}, buku=${books}, dan mobilitas=${travel}. Jika sebuah berkas diketahui lolos salah satu komponen pendanaan, peluang berkas itu lolos pendanaan penuh adalah...`,
+        answer,
+        explanation: `Karena semua berkas pada himpunan ini lolos setidaknya satu komponen, peluang bersyaratnya = ${scholarship}/${scholarship + total} = ${answer}.`,
+        options: shuffleDeterministic([
+          answer,
+          `${scholarship}/${scholarship + total}`,
+          `${living}/${scholarship + total}`,
+          `${scholarship}/${total}`,
+        ], seed),
+      };
+    },
+    () => {
+      const success = (((seed % 5) + 4) / 10);
+      const grant = ((seed >> 2) % 6) + 7;
+      const failCost = ((seed >> 5) % 3) + 2;
+      const answer = Number(((success * grant) - ((1 - success) * failCost)).toFixed(2));
+      return {
+        prompt: `[Sulit • Expected Value] Pada ${context}, sebuah intervensi memiliki peluang berhasil ${formatPercent(success * 100)}. Jika berhasil, manfaat bersih dinilai ${grant} poin; jika gagal, terjadi kerugian ${failCost} poin. Nilai harapan bersih intervensi tersebut adalah...`,
+        answer: answer.toString(),
+        explanation: `EV = p×gain - (1-p)×loss = ${success}×${grant} - ${Number((1 - success).toFixed(2))}×${failCost} = ${answer}.`,
+        options: shuffleDeterministic([
+          answer.toString(),
+          Number((answer + 0.8).toFixed(2)).toString(),
+          Number((answer - 0.8).toFixed(2)).toString(),
+          (grant - failCost).toString(),
+        ], seed),
+      };
+    },
+    () => {
+      const teamA = ((seed % 4) + 4);
+      const teamB = ((seed >> 2) % 5) + 5;
+      const daysA = ((seed >> 4) % 4) + 6;
+      const rateA = 1 / daysA;
+      const rateB = rateA * (teamB / teamA);
+      const downtime = ((seed >> 6) % 2) + 1;
+      const answer = Number((1 / (rateA + rateB) + downtime).toFixed(2));
+      return {
+        prompt: `[Sulit • Work Rate dengan Downtime] Dalam ${context}, tim A beranggotakan ${teamA} analis menyelesaikan satu model dalam ${daysA} hari. Tim B beranggotakan ${teamB} analis dengan produktivitas per orang sama. Jika kedua tim bekerja bersama tetapi terdapat downtime koordinasi ${downtime} hari, total waktu penyelesaian model adalah...`,
         answer: `${answer} hari`,
-        explanation: `${workers} × ${days} = ${newWorkers} × x, jadi x = ${(workers * days)}/${newWorkers} = ${answer} hari.`,
-        options: shuffleDeterministic([`${answer} hari`, `${Number((answer + 1).toFixed(2))} hari`, `${Number((answer - 1).toFixed(2))} hari`, `${workers + days} hari`], seed),
+        explanation: `Laju A = 1/${daysA}, laju B = (${teamB}/${teamA})×1/${daysA}. Waktu gabungan = 1/(laju A + laju B), lalu tambah downtime ${downtime} hari = ${answer} hari.`,
+        options: shuffleDeterministic([
+          `${answer} hari`,
+          `${Number((answer + 1).toFixed(2))} hari`,
+          `${Number((answer - 1).toFixed(2))} hari`,
+          `${daysA + downtime} hari`,
+        ], seed),
+      };
+    },
+    () => {
+      const start = ((seed % 8) + 8 + cycle) * 10;
+      const end = start + ((((seed >> 2) % 5) + 4) * 10);
+      const years = ((seed >> 4) % 3) + 2;
+      const answer = Number((((end / start) ** (1 / years) - 1) * 100).toFixed(2));
+      return {
+        prompt: `[Sulit • CAGR] Pada ${context}, indikator naik dari ${start} menjadi ${end} dalam ${years} tahun. Compound annual growth rate (CAGR) indikator tersebut adalah...`,
+        answer: formatPercent(answer),
+        explanation: `CAGR = ((${end}/${start})^(1/${years}) - 1) × 100% = ${formatPercent(answer)}.`,
+        options: shuffleDeterministic([
+          formatPercent(answer),
+          formatPercent(Number((((end - start) / start) * 100 / years).toFixed(2))),
+          formatPercent(Number((answer + 1.2).toFixed(2))),
+          formatPercent(Number((answer - 0.9).toFixed(2))),
+        ], seed),
+      };
+    },
+    () => {
+      const budget = ((seed % 7) + 18 + cycle) * 1_000_000;
+      const costA = (((seed >> 2) % 3) + 3) * 1_000_000;
+      const costB = (((seed >> 4) % 4) + 2) * 1_000_000;
+      const minA = ((seed >> 6) % 3) + 2;
+      const remaining = budget - (minA * costA);
+      const answer = Math.floor(remaining / costB);
+      return {
+        prompt: `[Sulit • Optimasi Anggaran Integer] Dalam ${context}, total anggaran ${formatRupiah(budget)} harus membiayai minimal ${minA} paket riset tipe A dengan biaya ${formatRupiah(costA)} per paket dan sisanya dapat dipakai untuk paket tipe B seharga ${formatRupiah(costB)} per paket. Jumlah maksimum paket tipe B yang masih dapat dibiayai adalah...`,
+        answer: `${answer} paket`,
+        explanation: `Setelah memenuhi minimal tipe A, sisa anggaran = ${formatRupiah(remaining)}. Banyak paket B maksimum = floor(sisa/${formatRupiah(costB)}) = ${answer}.`,
+        options: shuffleDeterministic([
+          `${answer} paket`,
+          `${Math.max(0, answer - 1)} paket`,
+          `${answer + 1} paket`,
+          `${Math.floor(budget / costB)} paket`,
+        ], seed),
+      };
+    },
+    () => {
+      const concentrationA = ((seed % 4) + 18);
+      const concentrationB = concentrationA + (((seed >> 2) % 4) + 6);
+      const volumeA = ((seed >> 4) % 4) + 3;
+      const volumeB = ((seed >> 6) % 5) + 4;
+      const answer = Number((((concentrationA * volumeA) + (concentrationB * volumeB)) / (volumeA + volumeB)).toFixed(2));
+      return {
+        prompt: `[Sulit • Campuran Tertimbang] Pada ${context}, dua sumber data memiliki akurasi ${concentrationA}% dan ${concentrationB}% dengan bobot volume ${volumeA} dan ${volumeB}. Akurasi tertimbang setelah digabung adalah...`,
+        answer: formatPercent(answer),
+        explanation: `Gunakan weighted mean: (${concentrationA}×${volumeA} + ${concentrationB}×${volumeB})/(${volumeA + volumeB}) = ${formatPercent(answer)}.`,
+        options: shuffleDeterministic([
+          formatPercent(answer),
+          formatPercent(Number(((concentrationA + concentrationB) / 2).toFixed(2))),
+          formatPercent(Number((answer + 1.5).toFixed(2))),
+          formatPercent(Number((answer - 1.25).toFixed(2))),
+        ], seed),
+      };
+    },
+    () => {
+      const baseline = ((seed % 7) + 55);
+      const month1 = baseline + (((seed >> 2) % 6) + 4);
+      const month2 = month1 - (((seed >> 4) % 4) + 1);
+      const month3 = month2 + (((seed >> 6) % 5) + 3);
+      const answer = Number((((month1 + month2 + month3) / 3) - baseline).toFixed(2));
+      return {
+        prompt: `[Sulit • Deviasi Rata-rata dari Baseline] Dalam ${context}, baseline indikator adalah ${baseline}. Tiga observasi berikutnya berturut-turut ${month1}, ${month2}, dan ${month3}. Selisih rata-rata tiga observasi terhadap baseline adalah...`,
+        answer: answer.toString(),
+        explanation: `Rata-rata observasi = ${Number(((month1 + month2 + month3) / 3).toFixed(2))}. Kurangi baseline ${baseline} sehingga diperoleh ${answer}.`,
+        options: shuffleDeterministic([
+          answer.toString(),
+          Number((answer + 1).toFixed(2)).toString(),
+          Number((answer - 1).toFixed(2)).toString(),
+          Number((((month3 - baseline))).toFixed(2)).toString(),
+        ], seed),
+      };
+    },
+    () => {
+      const grantA = ((seed % 5) + 3);
+      const grantB = ((seed >> 2) % 4) + 2;
+      const grantC = ((seed >> 4) % 3) + 1;
+      const total = grantA + grantB + grantC + ((seed >> 6) % 4) + 3;
+      const answer = `${grantA + grantB}/${total}`;
+      const g = gcd(grantA + grantB, total);
+      const simplified = `${(grantA + grantB) / g}/${total / g}`;
+      return {
+        prompt: `[Sulit • Probabilitas Gabungan] Pada ${context}, terdapat ${grantA} proposal kategori A, ${grantB} kategori B, ${grantC} kategori C, dan sisanya kategori D hingga total proposal ${total}. Jika dipilih satu proposal acak, peluang terambil proposal kategori A atau B adalah...`,
+        answer: simplified,
+        explanation: `P(A atau B) = (${grantA}+${grantB})/${total} = ${answer}, lalu sederhanakan menjadi ${simplified}.`,
+        options: shuffleDeterministic([
+          simplified,
+          answer,
+          `${grantA}/${total}`,
+          `${grantB + grantC}/${total}`,
+        ], seed),
+      };
+    },
+    () => {
+      const term1 = ((seed % 6) + 8);
+      const diff = ((seed >> 2) % 4) + 3;
+      const periods = ((seed >> 4) % 4) + 5;
+      const answer = (periods / 2) * ((2 * term1) + ((periods - 1) * diff));
+      return {
+        prompt: `[Sulit • Deret Aritmetika Anggaran] Dalam ${context}, alokasi semester pertama ${term1} unit dan tiap semester naik tetap ${diff} unit selama ${periods} semester. Total alokasi kumulatif seluruh semester adalah...`,
+        answer: String(answer),
+        explanation: `Jumlah deret aritmetika: n/2 [2a + (n-1)d] = ${answer}.`,
+        options: buildNumericOptions(answer, [answer + diff, answer - term1, term1 * periods], seed),
+      };
+    },
+    () => {
+      const male = ((seed % 5) + 7);
+      const female = ((seed >> 2) % 4) + 6;
+      const choose = 2;
+      const answer = (male * female) + (((male * (male - 1)) / 2));
+      return {
+        prompt: `[Sulit • Kombinatorika Seleksi] Pada ${context}, tersedia ${male} kandidat STEM dan ${female} kandidat sosial-kebijakan. Jika dipilih 2 orang dengan syarat minimal satu berasal dari STEM, banyak cara pemilihannya adalah...`,
+        answer: String(answer),
+        explanation: `Kasus valid = (1 STEM, 1 sosial) + (2 STEM) = ${male}×${female} + C(${male},${choose}) = ${answer}.`,
+        options: buildNumericOptions(answer, [answer + female, answer - male, (male + female) * 2], seed),
+      };
+    },
+    () => {
+      const total = ((seed % 6) + 15 + cycle) * 1_000_000;
+      const ratio = [((seed >> 2) % 3) + 2, ((seed >> 4) % 4) + 3, ((seed >> 6) % 3) + 2];
+      const parts = ratio.reduce((acc, value) => acc + value, 0);
+      const reserve = ((seed >> 8) % 3) + 1;
+      const distributable = total * (1 - (reserve / 10));
+      const answer = Math.round((distributable * ratio[1]) / parts);
+      return {
+        prompt: `[Sulit • Rasio dengan Dana Cadangan] Dalam ${context}, total anggaran ${formatRupiah(total)} menyisihkan ${reserve * 10}% sebagai cadangan. Sisa anggaran dibagi untuk tiga komponen dengan rasio ${ratio.join(':')}. Besar porsi komponen kedua adalah...`,
+        answer: formatRupiah(answer),
+        explanation: `Dana yang dibagi = ${formatRupiah(distributable)}. Bagian kedua = ${ratio[1]}/${parts} × ${formatRupiah(distributable)} = ${formatRupiah(answer)}.`,
+        options: shuffleDeterministic([
+          formatRupiah(answer),
+          formatRupiah(Math.round((total * ratio[1]) / parts)),
+          formatRupiah(Math.round(answer + 500_000)),
+          formatRupiah(Math.round(answer - 500_000)),
+        ], seed),
       };
     },
   ];
@@ -536,6 +734,8 @@ const lpdpAngles = [
 const createAdvancedLpdpSubstanceQuestion = (moduleName, index) => {
   const n = index + 1;
   const seed = seeded(moduleName, index);
+  const topic = index % 12;
+  const cycle = Math.floor(index / 12);
   const theme = lpdpThemes[index % lpdpThemes.length];
   const angle = lpdpAngles[Math.floor(index / lpdpThemes.length) % lpdpAngles.length];
   const challenge = pick([
@@ -544,34 +744,184 @@ const createAdvancedLpdpSubstanceQuestion = (moduleName, index) => {
     'kapasitas tim daerah sangat timpang',
     'deadline donor terlalu agresif',
     'resistensi komunitas lokal cukup tinggi',
-  ], seed);
+    'koordinasi lintas kementerian berjalan lambat',
+  ], seed + cycle);
 
-  const options = [
-    {
-      answer: `Memulai dengan pemetaan masalah ${theme}, lalu merancang ${angle} yang tetap adaptif saat ${challenge}.`,
-      explanation: 'Pendekatan terbaik pada seleksi substansi adalah berpikir strategis, evidence-based, dan menunjukkan kesiapan implementasi serta adaptasi risiko.',
+  const variants = [
+    () => {
+      const answer = `Memetakan masalah inti ${theme}, menjelaskan target outcome 12 bulan, lalu menunjukkan ${angle} beserta indikator, risiko, dan adaptasi bila ${challenge}.`;
+      return {
+        prompt: `[Sulit • Substansi LPDP] Dalam wawancara tentang ${theme}, jawaban paling kuat untuk menunjukkan ${angle} ketika ${challenge} adalah...`,
+        answer,
+        explanation: 'Jawaban yang kuat pada substansi LPDP harus menurunkan visi menjadi outcome, indikator, risiko, dan mekanisme adaptasi; bukan sekadar slogan kontribusi.',
+        options: shuffleDeterministic([
+          answer,
+          `Menonjolkan motivasi pribadi terhadap ${theme} tanpa menjelaskan ukuran keberhasilan maupun mitigasi ${challenge}.`,
+          `Menyampaikan bahwa ${theme} penting, lalu menunggu arahan lengkap pemerintah sebelum menyusun rencana kontribusi.`,
+          `Fokus pada kepopuleran isu ${theme} agar pewawancara menangkap antusiasme meski ${angle} belum operasional.`,
+        ], seed),
+      };
     },
-    {
-      answer: `Mengutamakan popularitas program ${theme} agar cepat disetujui walaupun indikator ${angle} belum matang.`,
-      explanation: '',
+    () => {
+      const answer = 'Menyusun theory of change sederhana: input → aktivitas → output → outcome, lalu menyebut asumsi kunci yang perlu diuji di lapangan.';
+      return {
+        prompt: `[Sulit • Theory of Change] Saat diminta menjelaskan bagaimana studi Anda akan berdampak pada ${theme}, respons terbaik adalah...`,
+        answer,
+        explanation: 'LPDP biasanya mencari alur kontribusi yang logis dan dapat diuji, bukan hanya niat baik yang abstrak.',
+        options: shuffleDeterministic([
+          answer,
+          'Menjelaskan daftar mata kuliah yang ingin diambil tanpa menghubungkannya ke perubahan nyata di Indonesia.',
+          'Menyebut outcome akhir yang sangat besar tetapi sengaja menghindari asumsi agar terdengar lebih pasti.',
+          'Langsung membahas gelar dan reputasi kampus sebagai bukti bahwa dampak otomatis akan terjadi.',
+        ], seed),
+      };
     },
-    {
-      answer: `Menunggu semua risiko ${challenge} hilang sebelum membuat desain kontribusi ${theme}.`,
-      explanation: '',
+    () => {
+      const answer = 'Memetakan stakeholder berdasarkan pengaruh dan kepentingan, lalu menentukan siapa yang harus diajak co-design, siapa yang cukup diinformasikan, dan siapa yang perlu dikelola resistensinya.';
+      return {
+        prompt: `[Sulit • Stakeholder Mapping] Untuk kasus ${theme} dengan kondisi ${challenge}, jawaban wawancara paling matang terkait kolaborasi multipihak adalah...`,
+        answer,
+        explanation: 'Pendekatan multipihak yang baik harus menunjukkan prioritas aktor dan strategi keterlibatan yang berbeda, bukan mengundang semua pihak tanpa hirarki.',
+        options: shuffleDeterministic([
+          answer,
+          'Mengajak sebanyak mungkin pihak sejak awal tanpa memilah kepentingan agar proses tampak inklusif.',
+          'Menghindari aktor yang berpotensi menolak agar implementasi terasa lebih cepat pada tahap awal.',
+          'Menyerahkan seluruh komunikasi pemangku kepentingan pada konsultan eksternal agar lebih netral.',
+        ], seed),
+      };
     },
-    {
-      answer: `Berfokus pada narasi personal tanpa menjelaskan bagaimana ${angle} dijalankan dalam isu ${theme}.`,
-      explanation: '',
+    () => {
+      const answer = 'Menjelaskan prioritas minimum yang tidak boleh dikorbankan, item yang bisa ditunda, dan dasar evidence mengapa penyesuaian tersebut tetap menjaga outcome inti.';
+      return {
+        prompt: `[Sulit • Trade-off Anggaran] Jika pendanaan untuk program ${theme} dipotong 30% tepat sebelum implementasi, jawaban substansi terbaik adalah...`,
+        answer,
+        explanation: 'Pada level sulit, pewawancara ingin melihat kemampuan menjaga tujuan inti sambil mengambil keputusan prioritas secara eksplisit.',
+        options: shuffleDeterministic([
+          answer,
+          'Mempertahankan semua komponen seperti semula sambil berharap efisiensi muncul selama pelaksanaan.',
+          'Memotong komponen yang paling sulit dijelaskan terlebih dahulu agar presentasi tetap sederhana.',
+          'Menunda seluruh program hingga anggaran kembali penuh agar desain tidak berubah.',
+        ], seed),
+      };
+    },
+    () => {
+      const answer = 'Mengakui keterbatasan baseline, menetapkan proxy metric sementara yang defensible, dan menjelaskan rencana memperbaiki kualitas data pada fase awal implementasi.';
+      return {
+        prompt: `[Sulit • Baseline Lemah] Saat ditanya bagaimana mengukur keberhasilan ${theme} jika ${challenge}, jawaban paling kuat adalah...`,
+        answer,
+        explanation: 'Respons matang tidak menutupi kelemahan data; justru menunjukkan cara tetap mengambil keputusan sambil memperbaiki basis evidensinya.',
+        options: shuffleDeterministic([
+          answer,
+          'Menunggu data sempurna sebelum menyusun indikator agar evaluasi bebas dari kritik.',
+          'Menggunakan satu angka nasional sebagai pengganti seluruh baseline daerah tanpa penyesuaian.',
+          'Mengganti seluruh indikator outcome menjadi narasi kualitatif agar tidak bergantung pada data awal.',
+        ], seed),
+      };
+    },
+    () => {
+      const answer = 'Menolak intervensi yang melanggar tata kelola, menjelaskan risiko jangka panjangnya, lalu menawarkan alternatif yang tetap menjaga target namun sesuai prinsip integritas.';
+      return {
+        prompt: `[Sulit • Integritas Keputusan] Dalam simulasi wawancara, Anda diminta merespons tekanan untuk mempercepat ${theme} dengan mem-bypass prosedur. Sikap terbaik adalah...`,
+        answer,
+        explanation: 'Sinyal penting pada seleksi substansi LPDP adalah integritas: berani menolak shortcut yang merusak legitimasi program.',
+        options: shuffleDeterministic([
+          answer,
+          'Menerima percepatan informal selama dampaknya dinilai positif dan tidak menimbulkan protes publik.',
+          'Mengikuti arahan senior terlebih dahulu karena tanggung jawab akhir ada pada atasan.',
+          'Diam terhadap pelanggaran kecil agar hubungan kerja tetap harmonis sebelum program berjalan penuh.',
+        ], seed),
+      };
+    },
+    () => {
+      const answer = 'Memulai dengan pilot terukur, mendokumentasikan pelajaran implementasi, lalu menyebut kriteria objektif kapan program layak diperluas dan kapan harus dihentikan.';
+      return {
+        prompt: `[Sulit • Scaling Strategy] Ketika ditanya strategi memperluas solusi ${theme} secara nasional, respons wawancara yang paling kuat adalah...`,
+        answer,
+        explanation: 'Jawaban sulit yang baik menampilkan disiplin scaling: ada fase uji, learning loop, dan threshold ekspansi yang jelas.',
+        options: shuffleDeterministic([
+          answer,
+          'Mendorong ekspansi nasional sejak awal agar manfaat program segera terasa luas.',
+          'Menyamakan keberhasilan satu pilot sebagai bukti bahwa model berlaku otomatis di seluruh daerah.',
+          'Fokus pada pencitraan keberhasilan awal agar dukungan politik tidak turun saat scale-up.',
+        ], seed),
+      };
+    },
+    () => {
+      const answer = 'Mengaitkan studi, jejaring, dan kompetensi yang dibangun dengan posisi atau platform konkret setelah pulang, termasuk institusi target, horizon waktu, dan bentuk kontribusi awal.';
+      return {
+        prompt: `[Sulit • Komitmen Kembali] Saat pewawancara menggali komitmen kembali ke Indonesia untuk isu ${theme}, jawaban paling meyakinkan adalah...`,
+        answer,
+        explanation: 'Komitmen kembali yang kuat harus spesifik: ke mana pulang, melakukan apa, dengan siapa, dan dalam jangka waktu berapa lama.',
+        options: shuffleDeterministic([
+          answer,
+          'Menegaskan bahwa pulang adalah prioritas moral tanpa perlu menyebut posisi atau kendaraan implementasi.',
+          'Menyatakan siap bekerja di mana saja nanti sambil melihat peluang paling nyaman setelah lulus.',
+          'Fokus pada peluang karier global terlebih dahulu baru mempertimbangkan kontribusi saat sudah mapan.',
+        ], seed),
+      };
+    },
+    () => {
+      const answer = 'Menyampaikan satu kegagalan nyata, pelajaran yang ditarik, perubahan sistem yang dibuat setelahnya, dan bagaimana pembelajaran itu relevan untuk ${theme}.';
+      return {
+        prompt: `[Sulit • Refleksi Kegagalan] Bila diminta menceritakan kegagalan kepemimpinan yang relevan dengan ${theme}, respons paling kuat adalah...`,
+        answer,
+        explanation: 'Pewawancara biasanya lebih menghargai refleksi jujur yang menunjukkan learning loop ketimbang cerita sempurna tanpa koreksi diri.',
+        options: shuffleDeterministic([
+          answer,
+          'Memilih contoh yang sangat kecil agar aman dan tidak membuka kemungkinan dinilai negatif.',
+          'Menceritakan kegagalan tim sepenuhnya sebagai akibat orang lain tanpa menyebut bagian tanggung jawab diri.',
+          'Menghindari kegagalan dan menggantinya dengan cerita keberhasilan agar kesan profesional tetap terjaga.',
+        ], seed),
+      };
+    },
+    () => {
+      const answer = 'Menjelaskan desain M&E yang memadukan indikator output, outcome, dan umpan balik lapangan sehingga keputusan koreksi bisa dilakukan sebelum program terlambat.';
+      return {
+        prompt: `[Sulit • Monitoring dan Evaluasi] Dalam konteks ${theme}, jawaban wawancara paling matang tentang M&E adalah...`,
+        answer,
+        explanation: 'M&E yang baik tidak berhenti pada pelaporan output; harus ada sinyal dini untuk koreksi implementasi.',
+        options: shuffleDeterministic([
+          answer,
+          'Menyusun indikator sebanyak mungkin agar evaluasi terlihat komprehensif walau sulit digunakan.',
+          'Mengutamakan output karena outcome dianggap terlalu lama untuk dinilai selama program berjalan.',
+          'Menyerahkan evaluasi akhir pada auditor eksternal tanpa mekanisme learning internal.',
+        ], seed),
+      };
+    },
+    () => {
+      const answer = 'Menyeimbangkan bukti kuantitatif dengan wawasan lapangan, lalu menjelaskan kapan data harus diutamakan dan kapan konteks lokal menuntut penyesuaian kebijakan.';
+      return {
+        prompt: `[Sulit • Evidence vs Context] Jika pewawancara menantang Anda karena data pusat berbeda dengan aspirasi lapangan pada isu ${theme}, jawaban terbaik adalah...`,
+        answer,
+        explanation: 'Seleksi substansi sulit biasanya menguji apakah kandidat mampu berpikir evidence-based tanpa buta konteks.',
+        options: shuffleDeterministic([
+          answer,
+          'Mengikuti data pusat sepenuhnya karena angka dianggap selalu lebih objektif daripada pengalaman lapangan.',
+          'Mengikuti aspirasi lokal sepenuhnya agar program diterima meski bertentangan dengan evidence yang ada.',
+          'Menghindari posisi yang tegas dan menunda keputusan sampai semua pihak sepakat total.',
+        ], seed),
+      };
+    },
+    () => {
+      const answer = 'Menutup jawaban dengan prioritas 100 hari pertama: pemetaan aktor, quick wins yang realistis, indikator awal, dan mekanisme akuntabilitas publik.';
+      return {
+        prompt: `[Sulit • 100 Hari Pertama] Saat diminta membuat rencana awal kontribusi untuk ${theme}, jawaban substansi paling tajam adalah...`,
+        answer,
+        explanation: 'Rencana 100 hari menguji kemampuan menerjemahkan visi ke eksekusi awal yang konkret dan akuntabel.',
+        options: shuffleDeterministic([
+          answer,
+          'Menyusun target lima tahun langsung tanpa menjelaskan pijakan implementasi bulan pertama.',
+          'Berfokus pada membangun citra program dahulu agar dukungan publik terbentuk sebelum detail dirumuskan.',
+          'Menunggu struktur organisasi final sebelum menyiapkan langkah awal sama sekali.',
+        ], seed),
+      };
     },
   ];
 
   return {
     id: `mcq-${moduleName}-${n}`,
     module: moduleName,
-    prompt: `[Sulit • Substansi LPDP] Jika Anda diwawancarai mengenai ${theme}, pendekatan paling kuat untuk menunjukkan ${angle} ketika ${challenge} adalah...`,
-    answer: options[0].answer,
-    explanation: options[0].explanation,
-    options: shuffleDeterministic(options.map((item) => item.answer), seed),
+    ...variants[topic](),
   };
 };
 
