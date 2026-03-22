@@ -6,7 +6,7 @@ export const moduleConfigs = [
   },
   { name: 'Matematika LPDP', tag: 'Reasoning Numerik', questionCount: 200 },
   { name: 'Tes Substansi LPDP', tag: 'Kebijakan & Kepemimpinan', questionCount: 150 },
-  { name: 'Tes Potensi Akademik', tag: 'Verbal & Logika', questionCount: 200 },
+  { name: 'Tes Potensi Akademik', tag: 'Verbal, Numerik & Logika • Hard mode', questionCount: 200 },
   { name: 'Soal Onkologi Radiasi', tag: 'Konsep Medis', questionCount: 200 },
   { name: 'Soal Toefl', tag: 'English Mastery', questionCount: 200 },
   { name: 'UKMPPD', tag: 'Semua Stase Kedokteran', questionCount: 150 },
@@ -34,6 +34,52 @@ export const moduleResearchNotes = {
       {
         label: 'detikEdu — Materi SIMAK UI 2025 (Matematika dalam TKD)',
         url: 'https://www.detik.com/edu/seleksi-masuk-pt/d-7947124/pendaftaran-simak-ui-2025-resmi-dibuka-melalui-enrollment-ui-ac-id-cek-biayanya',
+      },
+    ],
+  },
+  'Tes Potensi Akademik': {
+    summary: 'Riset awal saya pakai untuk menggeser modul ini ke level sulit penuh: komposisi TPA paling sering bergerak pada verbal, kuantitatif/numerik, dan penalaran-logika; versi sulit lalu ditingkatkan lewat multi-step inference, distraktor dekat, dan data yang tidak bisa dijawab dengan hafalan satu langkah.',
+    priorities: [
+      'Verbal sulit: analogi presisi, sinonim-antonim akademik, kelengkapan kalimat, dan inferensi paragraf pendek dengan asumsi tersembunyi.',
+      'Logika sulit: silogisme, ordering constraint, evaluasi argumen, fallacy, strengthening-weakening, dan data sufficiency.',
+      'Numerik sulit: deret multiaturan, perbandingan kuantitatif, aritmetika cerita singkat, himpunan, tabel, serta coding-decoding dengan jebakan pola.',
+      'Semua butir dibuat unik per indeks soal, sehingga tidak lagi mengulang stem yang sama lalu hanya mengganti label varian.',
+    ],
+    sources: [
+      {
+        label: 'Pusat Asesmen Pendidikan — Juknis Asesmen Bakat dan Minat 2023 (domain verbal, kuantitatif, penalaran)',
+        url: 'https://pusmendik.kemdikbud.go.id/abm2023/files/Juknis_Pelayanan_ABM_2023.pdf',
+      },
+      {
+        label: 'Siapkerja Kemnaker — SKBT BUMN 2024 (komponen verbal, numerik, logika, analitik)',
+        url: 'https://siapkerja.kemnaker.go.id/uploads/pengumuman/SKBT_BUMN.pdf',
+      },
+    ],
+  },
+  'TPA Bappenas': {
+    summary: 'Pola sulit untuk TPA Bappenas saya samakan dengan kerangka verbal–numerik–logika, tetapi proporsi soal diarahkan ke presisi inferensi dan efisiensi waktu.',
+    priorities: [
+      'Fokus pada verbal presisi, deret multiaturan, silogisme ketat, dan interpretasi data yang menuntut pembandingan rasio.',
+      'Distraktor didesain dekat dengan jawaban benar agar menguji akurasi, bukan sekadar tebakan permukaan.',
+    ],
+    sources: [
+      {
+        label: 'Siapkerja Kemnaker — SKBT BUMN 2024 (verbal, numerik, logika, analitik)',
+        url: 'https://siapkerja.kemnaker.go.id/uploads/pengumuman/SKBT_BUMN.pdf',
+      },
+    ],
+  },
+  'TPA Simak UI Paskasarjana': {
+    summary: 'Modul TPA pascasarjana ini disusun dengan penekanan pada reasoning yang lebih akademik: analogi konseptual, evaluasi argumen, inferensi data, dan numerik multi-langkah.',
+    priorities: [
+      'Soal verbal menuntut ketepatan makna akademik dan inferensi implisit.',
+      'Soal logika menuntut validitas kesimpulan, asumsi, serta pengujian argumen.',
+      'Soal numerik menuntut pattern recognition dan perhitungan singkat namun tidak langsung.',
+    ],
+    sources: [
+      {
+        label: 'Pusat Asesmen Pendidikan — Juknis Asesmen Bakat dan Minat 2023',
+        url: 'https://pusmendik.kemdikbud.go.id/abm2023/files/Juknis_Pelayanan_ABM_2023.pdf',
       },
     ],
   },
@@ -544,116 +590,431 @@ const tpaFallacies = [
   ['Sampel dua kota dianggap mewakili seluruh Indonesia.', 'hasty generalization'],
 ];
 
+const tpaAcademicWords = [
+  ['abstrak', 'konkret'],
+  ['sahih', 'cacat'],
+  ['gamblang', 'kabur'],
+  ['parsial', 'menyeluruh'],
+  ['inferensial', 'eksplisit'],
+  ['redundan', 'esensial'],
+  ['koheren', 'acak'],
+  ['objektif', 'tendensius'],
+];
+const tpaConnectors = [
+  ['namun', 'pertentangan'],
+  ['karena itu', 'kesimpulan'],
+  ['sebaliknya', 'kontras dua arah'],
+  ['meskipun demikian', 'konsesi'],
+  ['selain itu', 'penambahan argumen'],
+  ['akibatnya', 'hubungan sebab-akibat'],
+];
+const tpaInferenceCases = [
+  {
+    passage: 'Dalam uji coba pertama, akurasi model naik 11%, tetapi hanya pada data yang sudah dibersihkan manual. Pada data mentah, peningkatan tidak signifikan.',
+    answer: 'Kenaikan performa model bergantung pada kualitas pra-pemrosesan data.',
+    distractors: [
+      'Model pasti gagal diterapkan pada semua data mentah.',
+      'Pra-pemrosesan manual selalu tidak diperlukan.',
+      'Akurasi model turun pada semua kondisi.',
+    ],
+  },
+  {
+    passage: 'Sebagian besar peserta dengan skor tinggi menyelesaikan soal lebih lambat dari median, tetapi tingkat kesalahan mereka jauh lebih rendah.',
+    answer: 'Kecepatan tinggi tidak selalu lebih menentukan daripada akurasi pada tes ini.',
+    distractors: [
+      'Peserta tercepat pasti memperoleh skor tertinggi.',
+      'Semua peserta lambat memiliki skor tinggi.',
+      'Median waktu selalu menjadi target terbaik.',
+    ],
+  },
+  {
+    passage: 'Ketika distraktor diperhalus, proporsi jawaban salah meningkat terutama pada peserta yang membaca premis terakhir secara terburu-buru.',
+    answer: 'Ketelitian membaca premis akhir memengaruhi kemampuan menghindari distraktor halus.',
+    distractors: [
+      'Distraktor halus selalu mudah dideteksi.',
+      'Premis terakhir tidak relevan terhadap jawaban.',
+      'Peserta cermat justru lebih sering tertipu.',
+    ],
+  },
+  {
+    passage: 'Setelah tabel diubah dari angka mentah ke rasio per orang, peringkat efisiensi tim berubah total walaupun output absolut tidak berubah.',
+    answer: 'Kesimpulan efisiensi dapat berubah jika ukuran pembanding yang dipakai juga berubah.',
+    distractors: [
+      'Output absolut tidak pernah boleh dipakai.',
+      'Rasio per orang selalu identik dengan total output.',
+      'Tim dengan output terbesar pasti tetap paling efisien.',
+    ],
+  },
+];
+const tpaAssumptionCases = [
+  {
+    argument: 'Program pelatihan ini layak diperluas nasional karena tingkat kelulusannya 92% di tiga kota pilot.',
+    answer: 'Tiga kota pilot cukup mewakili variasi konteks implementasi yang lebih luas.',
+  },
+  {
+    argument: 'Kampus sebaiknya mengganti seluruh tryout lama dengan format digital karena nilai rerata peserta digital lebih tinggi.',
+    answer: 'Kenaikan rerata tidak semata-mata disebabkan oleh perbedaan karakteristik peserta.',
+  },
+  {
+    argument: 'Divisi riset harus menambah staf karena backlog laporan naik 30% dalam dua bulan terakhir.',
+    answer: 'Kenaikan backlog tidak dapat diselesaikan memadai hanya dengan perbaikan alur kerja yang ada.',
+  },
+  {
+    argument: 'Kelas intensif malam lebih efektif, sebab peserta malam melaporkan kepuasan lebih tinggi.',
+    answer: 'Tingkat kepuasan mempunyai hubungan relevan dengan efektivitas belajar yang dimaksud.',
+  },
+];
+const tpaCodingPairs = [
+  ['LOGIKA', 'MPHJLB'],
+  ['NALAR', 'OBMBS'],
+  ['KRITIS', 'LSJUJT'],
+  ['VALID', 'WBMJE'],
+];
+
 const createAdvancedTpaQuestion = (moduleName, index) => {
   const n = index + 1;
   const seed = seeded(moduleName, index);
-  const topic = index % 8;
+  const topic = index % 20;
+  const cycle = Math.floor(index / 20);
 
   const variants = [
     () => {
       const [a, b, c, d] = tpaRelations[index % tpaRelations.length];
+      const extra = pick(['instrumen inti', 'produk kerja utama', 'alat representasi utama', 'hasil analisis khas'], seed);
       return {
-        prompt: `[Sulit • Analogi Konseptual] ${a} : ${b} = ${c} : ...`,
+        prompt: `[Sulit • Analogi Profesi] ${a} : ${b} = ${c} : ... (fokus pada ${extra})`,
         answer: d,
-        explanation: `Hubungan yang dipakai adalah pelaku dengan instrumen/produk intelektual utamanya.`,
-        options: shuffleDeterministic([d, a, b, 'validasi'], seed),
+        explanation: `Hubungan yang dipakai adalah pelaku dengan ${extra} yang paling melekat pada perannya.`,
+        options: shuffleDeterministic([d, a, b, 'verifikasi'], seed),
       };
     },
     () => {
-      const item = pick([
-        { seq: [3, 7, 15, 31], answer: 63, rule: 'setiap suku = 2×suku sebelumnya + 1' },
-        { seq: [2, 6, 12, 20], answer: 30, rule: 'bertambah +4, +6, +8, +10' },
-        { seq: [81, 27, 9, 3], answer: 1, rule: 'dibagi 3 setiap langkah' },
-        { seq: [5, 10, 8, 16, 14], answer: 28, rule: 'bergantian ×2 lalu -2' },
-      ], seed);
+      const pairs = [
+        ['hipotesis', 'pengujian', 'diagnosis', 'pemeriksaan'],
+        ['kurikulum', 'implementasi', 'kebijakan', 'regulasi'],
+        ['data', 'validasi', 'argumen', 'evaluasi'],
+        ['sampel', 'representativitas', 'instrumen', 'reliabilitas'],
+      ];
+      const [a, b, c, d] = pairs[(cycle + index) % pairs.length];
       return {
-        prompt: `[Sulit • Deret Campuran] Tentukan suku berikutnya: ${item.seq.join(', ')}, ...`,
+        prompt: `[Sulit • Analogi Konseptual] ${a} : ${b} = ${c} : ...`,
+        answer: d,
+        explanation: `${b} merupakan proses/kriteria utama yang melekat pada ${a}; pola yang sama dipakai untuk ${c}.`,
+        options: shuffleDeterministic([d, a, b, 'interpretasi'], seed),
+      };
+    },
+    () => {
+      const groups = [
+        {
+          words: ['deduktif', 'induktif', 'analitis', 'berlari'],
+          answer: 'berlari',
+          reason: 'tiga kata lain adalah istilah mode bernalar',
+        },
+        {
+          words: ['premis', 'konklusi', 'inferensi', 'arsip'],
+          answer: 'arsip',
+          reason: 'tiga kata lain adalah komponen penalaran',
+        },
+        {
+          words: ['koheren', 'konsisten', 'valid', 'berenang'],
+          answer: 'berenang',
+          reason: 'tiga kata lain adalah sifat argumen/penyajian',
+        },
+      ];
+      const item = groups[(cycle + seed) % groups.length];
+      return {
+        prompt: `[Sulit • Klasifikasi Verbal] Manakah yang tidak sekelompok: ${item.words.join(', ')}?`,
+        answer: item.answer,
+        explanation: `${item.answer} berbeda karena ${item.reason}.`,
+        options: shuffleDeterministic(item.words, seed),
+      };
+    },
+    () => {
+      const [word, opposite] = tpaAcademicWords[(index + cycle) % tpaAcademicWords.length];
+      const near = {
+        konkret: ['fisik', 'padat'],
+        cacat: ['lemah', 'semu'],
+        kabur: ['dangkal', 'rumit'],
+        menyeluruh: ['umum', 'luas'],
+        eksplisit: ['langsung', 'terang'],
+        esensial: ['utama', 'penting'],
+        acak: ['bebas', 'liar'],
+        tendensius: ['bias', 'sepihak'],
+      };
+      return {
+        prompt: `[Sulit • Antonim Akademik] Lawan kata yang paling tepat untuk "${word}" adalah...`,
+        answer: opposite,
+        explanation: `Yang dicari adalah antonim akademik paling presisi untuk ${word}.`,
+        options: shuffleDeterministic([opposite, ...near[opposite], word], seed),
+      };
+    },
+    () => {
+      const synonyms = [
+        ['sahih', 'valid'],
+        ['gamblang', 'jelas'],
+        ['redundan', 'berlebih'],
+        ['parsial', 'sebagian'],
+        ['koheren', 'padu'],
+        ['implisit', 'tersirat'],
+      ];
+      const [word, answer] = synonyms[(cycle + index) % synonyms.length];
+      return {
+        prompt: `[Sulit • Sinonim Akademik] Makna yang paling dekat dengan kata "${word}" adalah...`,
+        answer,
+        explanation: `Pada konteks akademik, ${word} paling dekat dengan ${answer}.`,
+        options: shuffleDeterministic([answer, 'acak', 'dangkal', 'reaktif'], seed),
+      };
+    },
+    () => {
+      const [connector, functionLabel] = tpaConnectors[(index + cycle) % tpaConnectors.length];
+      const sentences = [
+        `Data awal menunjukkan korelasi cukup kuat; ___, peneliti tetap menolak menyimpulkan hubungan sebab-akibat karena desainnya observasional.`,
+        `Tim A menghasilkan output paling tinggi; ___, setelah dihitung per anggota, efisiensinya justru bukan yang terbaik.`,
+        `Instrumen versi kedua lebih ringkas; ___, reliabilitasnya perlu diuji ulang sebelum dipakai luas.`,
+      ];
+      const stem = sentences[(seed + cycle) % sentences.length].replace('___', connector);
+      const wrongs = tpaConnectors.map(([item]) => item).filter((item) => item !== connector).slice(0, 3);
+      return {
+        prompt: `[Sulit • Kelengkapan Kalimat] Pilih penghubung paling tepat: ${stem.replace(connector, '___')}`,
+        answer: connector,
+        explanation: `Kalimat menuntut fungsi ${functionLabel}, sehingga penghubung yang tepat adalah ${connector}.`,
+        options: shuffleDeterministic([connector, ...wrongs], seed),
+      };
+    },
+    () => {
+      const item = tpaInferenceCases[(index + cycle) % tpaInferenceCases.length];
+      return {
+        prompt: `[Sulit • Inferensi Paragraf] Bacalah pernyataan berikut: ${item.passage} Kesimpulan yang PALING didukung adalah...`,
+        answer: item.answer,
+        explanation: 'Kesimpulan benar harus paling kuat ditopang data pada paragraf, tanpa melompat terlalu jauh.',
+        options: shuffleDeterministic([item.answer, ...item.distractors], seed),
+      };
+    },
+    () => {
+      const item = tpaAssumptionCases[(index + cycle) % tpaAssumptionCases.length];
+      return {
+        prompt: `[Sulit • Asumsi Tersembunyi] Argumen: "${item.argument}" Asumsi yang paling diperlukan agar argumen kuat adalah...`,
+        answer: item.answer,
+        explanation: 'Asumsi benar adalah jembatan yang harus berlaku agar kesimpulan dapat ditopang premis.',
+        options: shuffleDeterministic([
+          item.answer,
+          'Semua program yang populer pasti efektif.',
+          'Setiap data kuantitatif otomatis lebih baik dari data kualitatif.',
+          'Tidak ada faktor luar yang mungkin memengaruhi hasil apa pun.',
+        ], seed),
+      };
+    },
+    () => {
+      const cases = [
+        {
+          argument: 'Kelas intensif online dianggap efektif karena rerata skor pascates naik 8 poin.',
+          answer: 'Menunjukkan bahwa karakteristik awal peserta kelas online setara dengan kelompok pembanding.',
+        },
+        {
+          argument: 'Tim B dinilai paling efisien karena menyelesaikan proyek paling cepat.',
+          answer: 'Menambahkan data bahwa kompleksitas proyek tiap tim setara.',
+        },
+        {
+          argument: 'Paket tryout baru lebih baik sebab tingkat kepuasan pengguna lebih tinggi.',
+          answer: 'Menambahkan bukti bahwa akurasi prediksi hasil ujian juga meningkat.',
+        },
+      ];
+      const item = cases[(seed + cycle) % cases.length];
+      return {
+        prompt: `[Sulit • Strengthening] Pernyataan mana yang PALING memperkuat argumen berikut? "${item.argument}"`,
+        answer: item.answer,
+        explanation: 'Penguat terbaik menutup celah utama pada argumen, bukan sekadar menambah informasi yang tampak positif.',
+        options: shuffleDeterministic([
+          item.answer,
+          'Sebagian peserta menyukai tampilan antarmuka program.',
+          'Pengelola merasa program tersebut lebih modern.',
+          'Ada kota lain yang belum mencoba program itu.',
+        ], seed),
+      };
+    },
+    () => {
+      const cases = [
+        {
+          argument: 'Metode belajar X paling efektif karena siswa yang memakainya memperoleh skor tertinggi.',
+          answer: 'Siswa pengguna metode X sejak awal memang memiliki rerata kemampuan dasar paling tinggi.',
+        },
+        {
+          argument: 'Aplikasi baru harus diadopsi penuh karena pengguna aktifnya naik tajam dalam dua minggu.',
+          answer: 'Kenaikan pengguna terjadi bersamaan dengan kebijakan wajib login yang tidak memberi alternatif lain.',
+        },
+        {
+          argument: 'Tim riset kecil lebih produktif sebab laporan mereka terbit lebih sering.',
+          answer: 'Rata-rata panjang dan kompleksitas laporan tim kecil jauh lebih rendah.',
+        },
+      ];
+      const item = cases[(seed + cycle) % cases.length];
+      return {
+        prompt: `[Sulit • Weakening] Pernyataan mana yang PALING melemahkan argumen berikut? "${item.argument}"`,
+        answer: item.answer,
+        explanation: 'Pelemah terbaik menunjukkan alternatif penjelasan atau membongkar dasar perbandingan argumen.',
+        options: shuffleDeterministic([
+          item.answer,
+          'Program tersebut cukup dikenal di media sosial.',
+          'Beberapa peserta merasa soal lebih menantang.',
+          'Biaya pelaksanaan program relatif moderat.',
+        ], seed),
+      };
+    },
+    () => {
+      const [statement, answer] = tpaFallacies[index % tpaFallacies.length];
+      return {
+        prompt: `[Sulit • Fallacy] Kekeliruan logika dominan pada pernyataan berikut adalah: "${statement}"`,
+        answer,
+        explanation: 'Penamaan fallacy harus mengikuti titik lemah paling utama pada hubungan premis dan kesimpulan.',
+        options: shuffleDeterministic([answer, 'appeal to tradition', 'equivocation', 'slippery slope'], seed),
+      };
+    },
+    () => {
+      const quant = 18 + cycle;
+      const analyst = 10 + cycle;
+      const tech = 6 + cycle;
+      const both = 4 + (cycle % 4);
+      return {
+        prompt: `[Sulit • Silogisme Himpunan] Dari ${quant} peserta menyukai kuantitatif, ${analyst} menyukai analitik, dan ${both} menyukai keduanya. Jika total peserta ${quant + analyst - both + tech}, kesimpulan yang PASTI benar adalah...`,
+        answer: `Paling sedikit ${quant - both} peserta hanya menyukai kuantitatif.`,
+        explanation: `Yang hanya menyukai kuantitatif = ${quant} - ${both} = ${quant - both}. Nilai ini pasti.`,
+        options: shuffleDeterministic([
+          `Paling sedikit ${quant - both} peserta hanya menyukai kuantitatif.`,
+          `Semua peserta menyukai minimal dua bidang.`,
+          `Jumlah peserta yang menyukai analitik saja pasti ${analyst}.`,
+          `Tidak ada peserta yang tidak menyukai keduanya.`,
+        ], seed),
+      };
+    },
+    () => {
+      const people = ['Alya', 'Bima', 'Citra', 'Damar', 'Eka'];
+      const first = people[(cycle + 1) % people.length];
+      const last = people[(cycle + 3) % people.length];
+      return {
+        prompt: `[Sulit • Ordering Constraint] Lima peserta duduk berjajar. ${first} harus duduk lebih kiri daripada ${last}, Citra tidak boleh di kursi paling ujung, dan Bima harus berdampingan dengan Eka. Pernyataan yang pasti benar adalah...`,
+        answer: `${first} tidak mungkin duduk di kanan ${last}.`,
+        explanation: 'Ini langsung mengikuti constraint utama dan tetap benar di semua susunan yang mungkin.',
+        options: shuffleDeterministic([
+          `${first} tidak mungkin duduk di kanan ${last}.`,
+          'Citra pasti duduk di tengah.',
+          'Damar pasti duduk di kursi paling kiri.',
+          'Bima selalu duduk di kiri Eka.',
+        ], seed),
+      };
+    },
+    () => {
+      const sequences = [
+        { seq: [4, 9, 19, 39], answer: 79, rule: 'setiap langkah ×2 lalu +1' },
+        { seq: [6, 11, 19, 30], answer: 44, rule: 'bertambah +5, +8, +11, +14' },
+        { seq: [3, 6, 12, 24, 48], answer: 96, rule: 'setiap suku dikali 2' },
+        { seq: [2, 5, 11, 23], answer: 47, rule: 'setiap langkah ×2 lalu +1 kecuali suku awal' },
+        { seq: [81, 54, 36, 24], answer: 16, rule: 'setiap suku dikali 2/3' },
+      ];
+      const item = sequences[(index + cycle) % sequences.length];
+      return {
+        prompt: `[Sulit • Deret Multiaturan] Tentukan suku berikutnya: ${item.seq.join(', ')}, ...`,
         answer: String(item.answer),
         explanation: `Pola: ${item.rule}.`,
         options: buildNumericOptions(item.answer, [item.answer + 2, item.answer - 2, item.answer + 6], seed),
       };
     },
     () => {
-      const [statement, answer] = tpaFallacies[index % tpaFallacies.length];
+      const packA = 3 + (cycle % 4);
+      const packB = 2 + (cycle % 3);
+      const valueA = 14 + cycle;
+      const valueB = 9 + cycle;
+      const bonus = 5 + (cycle % 5);
+      const answer = (packA * valueA) + (packB * valueB) - bonus;
       return {
-        prompt: `[Sulit • Critical Reasoning] Jenis kekeliruan logika pada pernyataan berikut adalah: "${statement}"`,
-        answer,
-        explanation: 'Penamaan fallacy harus mengikuti kelemahan inti pada hubungan premis dan kesimpulannya.',
-        options: shuffleDeterministic([answer, 'appeal to tradition', 'circular reasoning', 'equivocation'], seed),
+        prompt: `[Sulit • Aritmetika Cerita] Sebuah paket tryout terdiri atas ${packA} subtes verbal bernilai ${valueA} poin masing-masing dan ${packB} subtes numerik bernilai ${valueB} poin masing-masing. Jika ada penalti administrasi ${bonus} poin, total skor paket adalah...`,
+        answer: String(answer),
+        explanation: `Total = ${packA}×${valueA} + ${packB}×${valueB} - ${bonus} = ${answer}.`,
+        options: buildNumericOptions(answer, [answer + bonus, answer - packA, (packA + packB) * valueB], seed),
       };
     },
     () => {
-      const premise1 = 'Semua proposal yang lolos panel memenuhi kriteria metodologi kuat.';
-      const premise2 = 'Sebagian proposal berdampak tinggi tidak lolos panel.';
+      const a = 3 + (cycle % 5);
+      const b = 4 + (cycle % 4);
+      const c = 2 + (cycle % 3);
+      const left = a * b;
+      const right = (a + c) * (b - 1);
+      const relation = left > right ? 'Kuantitas A lebih besar' : left < right ? 'Kuantitas B lebih besar' : 'Keduanya sama';
       return {
-        prompt: `[Sulit • Silogisme] ${premise1} ${premise2} Kesimpulan yang pasti benar adalah...`,
-        answer: 'Tidak semua proposal berdampak tinggi memenuhi seluruh kriteria panel.',
-        explanation: 'Karena sebagian proposal berdampak tinggi tidak lolos panel, paling tidak ada proposal berdampak tinggi yang tidak memenuhi seluruh kriteria panel.',
+        prompt: `[Sulit • Perbandingan Kuantitatif] Kuantitas A = ${a} × ${b}. Kuantitas B = (${a}+${c}) × (${b}-1). Hubungan yang benar adalah...`,
+        answer: relation,
+        explanation: `Kuantitas A = ${left} dan Kuantitas B = ${right}, sehingga jawabannya: ${relation}.`,
         options: shuffleDeterministic([
-          'Tidak semua proposal berdampak tinggi memenuhi seluruh kriteria panel.',
-          'Semua proposal berdampak tinggi pasti metodologinya kuat.',
-          'Semua proposal yang lolos panel berdampak tinggi.',
-          'Tidak dapat disimpulkan apa pun tentang proposal berdampak tinggi.',
+          relation,
+          'Informasi tidak cukup',
+          'Kuantitas A lebih kecil karena penjumlahan selalu kalah oleh perkalian',
+          'Keduanya sama untuk semua nilai',
         ], seed),
       };
     },
     () => {
-      const correct = pick(['abstrak', 'sahih', 'gamblang', 'inferensi'], seed);
-      const optionsMap = {
-        abstrak: ['konkret', 'bias', 'redundan'],
-        sahih: ['keliru', 'rapuh', 'semu'],
-        gamblang: ['kabur', 'dangkal', 'rancu'],
-        inferensi: ['narasi', 'deskripsi', 'retorika'],
-      };
+      const x = 2 + (cycle % 4);
+      const y = 5 + (cycle % 5);
+      const total = x + y;
       return {
-        prompt: `[Sulit • Antonim/Sinonim Akademik] Lawan kata paling tepat dari "${correct}" adalah...`,
-        answer: optionsMap[correct][0],
-        explanation: `Fokus pada makna akademik paling presisi, bukan asosiasi sehari-hari yang longgar.`,
-        options: shuffleDeterministic([optionsMap[correct][0], ...optionsMap[correct].slice(1), correct], seed),
-      };
-    },
-    () => {
-      const tables = [
-        { a: 24, b: 18, c: 30, answer: 'Tim C memiliki laju produksi tertinggi per orang.' },
-        { a: 35, b: 28, c: 21, answer: 'Tim A unggul 25% dibanding tim B.' },
-      ];
-      const item = tables[index % tables.length];
-      return {
-        prompt: `[Sulit • Interpretasi Data] Output tiga tim adalah A=${item.a}, B=${item.b}, C=${item.c}. Jika jumlah anggota A=5, B=4, C=6, kesimpulan paling valid adalah...`,
-        answer: item.answer,
-        explanation: 'Bandingkan rasio output per orang sebelum menarik kesimpulan, bukan total mentah saja.',
+        prompt: `[Sulit • Data Sufficiency] Diketahui x dan y bilangan bulat positif. Pertanyaan: berapa nilai x+y? (1) x=${x}. (2) y=${y}. Pilihan yang benar adalah...`,
+        answer: 'Kedua pernyataan bersama-sama cukup, tetapi masing-masing sendiri tidak cukup.',
+        explanation: `Pernyataan (1) hanya memberi x, pernyataan (2) hanya memberi y; gabungan keduanya memberi x+y=${total}.`,
         options: shuffleDeterministic([
-          item.answer,
-          'Tim dengan total output terbesar pasti juga paling efisien.',
-          'Tidak mungkin menilai efisiensi tanpa biaya total.',
-          'Tim B dan C pasti identik produktivitasnya.',
+          'Kedua pernyataan bersama-sama cukup, tetapi masing-masing sendiri tidak cukup.',
+          'Pernyataan (1) saja cukup.',
+          'Pernyataan (2) saja cukup.',
+          'Kedua pernyataan bersama-sama masih tidak cukup.',
         ], seed),
       };
     },
     () => {
-      const answer = 'Mengidentifikasi asumsi tersembunyi sebelum menilai validitas argumen';
+      const total = 40 + cycle;
+      const verbal = 24 + cycle;
+      const numerik = 18 + cycle;
+      const both = verbal + numerik - total;
       return {
-        prompt: `[Sulit • Strategi Tes] Saat menghadapi argumen kompleks dengan dua premis statistik yang tampak kuat, langkah paling efektif adalah...`,
+        prompt: `[Sulit • Himpunan] Dalam satu kelas ada ${total} peserta. Sebanyak ${verbal} menyukai verbal dan ${numerik} menyukai numerik. Jika semua peserta menyukai minimal salah satu, banyak peserta yang menyukai keduanya adalah...`,
+        answer: String(both),
+        explanation: `Gunakan rumus |V ∩ N| = |V| + |N| - |V ∪ N| = ${verbal}+${numerik}-${total} = ${both}.`,
+        options: buildNumericOptions(both, [both + 2, both - 2, total - both], seed),
+      };
+    },
+    () => {
+      const [plain, coded] = tpaCodingPairs[(index + cycle) % tpaCodingPairs.length];
+      const next = ['TES', 'DATA', 'PREMIS', 'ARGUMEN'][(index + cycle) % 4];
+      const encoded = next.split('').map((char) => String.fromCharCode(char.charCodeAt(0) + 1)).join('');
+      return {
+        prompt: `[Sulit • Coding-Decoding] Jika pola pengkodean ${plain} → ${coded}, maka ${next} dikodekan menjadi...`,
+        answer: encoded,
+        explanation: 'Pola pengkodean menaikkan setiap huruf satu langkah dalam alfabet.',
+        options: shuffleDeterministic([
+          encoded,
+          next.split('').reverse().join(''),
+          next,
+          next.split('').map((char) => String.fromCharCode(char.charCodeAt(0) + 2)).join(''),
+        ], seed),
+      };
+    },
+    () => {
+      const a = 36 + (cycle * 3);
+      const b = 30 + (cycle * 2);
+      const c = 42 + (cycle * 4);
+      const sizeA = 6 + (cycle % 3);
+      const sizeB = 5 + (cycle % 4);
+      const sizeC = 7 + (cycle % 3);
+      const rates = [a / sizeA, b / sizeB, c / sizeC];
+      const labels = ['Tim A', 'Tim B', 'Tim C'];
+      const answer = `${labels[rates.indexOf(Math.max(...rates))]} memiliki output per orang tertinggi.`;
+      return {
+        prompt: `[Sulit • Interpretasi Tabel] Output tiga tim berturut-turut adalah A=${a}, B=${b}, C=${c}. Jika jumlah anggota masing-masing ${sizeA}, ${sizeB}, dan ${sizeC}, kesimpulan paling valid adalah...`,
         answer,
-        explanation: 'Asumsi tersembunyi sering menjadi sumber kesalahan inferensi dalam soal TPA tingkat tinggi.',
+        explanation: `Bandingkan output per orang: A=${Number((a / sizeA).toFixed(2))}, B=${Number((b / sizeB).toFixed(2))}, C=${Number((c / sizeC).toFixed(2))}.`,
         options: shuffleDeterministic([
           answer,
-          'Langsung memilih opsi dengan istilah paling teknis',
-          'Mengabaikan angka agar fokus pada opini penulis',
-          'Mengganti premis dengan pengalaman pribadi',
+          'Tim dengan output total terbesar pasti paling efisien.',
+          'Tidak mungkin membandingkan tanpa biaya tetap.',
+          'Semua tim memiliki produktivitas identik.',
         ], seed),
-      };
-    },
-    () => {
-      const a = (seed % 4) + 2;
-      const b = ((seed >> 2) % 4) + 3;
-      const c = ((seed >> 4) % 3) + 2;
-      const answer = a * b + c;
-      return {
-        prompt: `[Sulit • Penalaran Numerik] Jika semua objek tipe X bernilai ${a} poin, tipe Y bernilai ${b} poin, dan bonus validasi ${c} poin diberikan sekali, total skor untuk 1 paket XY adalah...`,
-        answer: String(answer),
-        explanation: `Total = ${a}×${b} + ${c} = ${answer}.`,
-        options: buildNumericOptions(answer, [answer + 2, answer - 1, a + b + c], seed),
       };
     },
   ];
@@ -1086,9 +1447,9 @@ const essayBlueprints = {
     scenarios: ['sertakan indikator hasil', 'jelaskan trade-off kebijakan', 'masukkan strategi kolaborasi', 'tuliskan peta implementasi 12 bulan'],
   },
   'Tes Potensi Akademik': {
-    themes: ['validitas argumen', 'inferensi teks akademik', 'analogi konseptual', 'fallacy dalam debat publik', 'deret campuran', 'strategi eliminasi opsi'],
-    lenses: ['dari sisi kecepatan', 'dari sisi akurasi', 'dari sisi metakognisi', 'dari sisi jebakan soal'],
-    scenarios: ['sertakan contoh orisinal', 'urai langkah bernalar', 'bandingkan dengan pendekatan keliru umum'],
+    themes: ['validitas argumen', 'inferensi teks akademik', 'analogi konseptual', 'fallacy dalam debat publik', 'deret multiaturan', 'strategi eliminasi opsi', 'data sufficiency', 'himpunan dan irisan', 'perbandingan kuantitatif', 'ordering constraint'],
+    lenses: ['dari sisi kecepatan', 'dari sisi akurasi', 'dari sisi metakognisi', 'dari sisi jebakan soal', 'dari sisi evaluasi asumsi', 'dari sisi review kesalahan'],
+    scenarios: ['sertakan contoh orisinal', 'urai langkah bernalar', 'bandingkan dengan pendekatan keliru umum', 'buat checklist singkat sebelum memilih jawaban'],
   },
   'Soal Onkologi Radiasi': {
     themes: ['4R radiobiologi', 'konturing GTV/CTV/PTV', 'fraksionasi', 'LET dan RBE', 'efek akut vs lambat', 'peran imaging multimodal'],
@@ -1166,11 +1527,11 @@ const flashcardBlueprints = {
   'Matematika Simak UI': ['identitas aljabar', 'diskriminan', 'deret aritmetika', 'deret geometri', 'optimasi kuadrat', 'transformasi grafik'],
   'Matematika LPDP': ['present value', 'future value', 'BEP', 'persentase bertingkat', 'rasio majemuk', 'probabilitas keputusan'],
   'Tes Substansi LPDP': ['theory of change', 'stakeholder mapping', 'SMART metric', 'risk register', 'impact pathway', 'exit strategy'],
-  'Tes Potensi Akademik': ['premis', 'inferensi', 'analogi', 'fallacy', 'eliminasi opsi', 'pola campuran'],
+  'Tes Potensi Akademik': ['premis', 'inferensi', 'analogi', 'fallacy', 'eliminasi opsi', 'pola campuran', 'data sufficiency', 'rasio tabel', 'asumsi', 'constraint'],
   'Soal Onkologi Radiasi': ['4R radiobiologi', 'CTV/PTV', 'IMRT', 'LET', 'OER', 'toxicity grading'],
   'Soal Toefl': ['subjunctive', 'inversion', 'rhetorical purpose', 'inference', 'collocation', 'hedging'],
   UKMPPD: ['triase', 'red flag', 'reperfusi', 'rehidrasi', 'MgSO4', 'door-to-CT'],
-  'TPA Bappenas': ['silogisme', 'deret', 'interpretasi tabel', 'synonym precision', 'assumption check', 'time strategy'],
+  'TPA Bappenas': ['silogisme', 'deret', 'interpretasi tabel', 'synonym precision', 'assumption check', 'time strategy', 'rasio', 'strengthening'],
   IELTS: ['Task Response', 'Cohesion', 'Lexical Resource', 'Band 7 evidence', 'Part 3 development', 'overview statement'],
   'Bahasa inggris Simak UI Paskasarjana': ['connector', 'inference', 'formal inversion', 'academic collocation', 'cloze logic', 'sentence completion'],
   'Bahasa Spanyol': ['subjuntivo', 'por vs para', 'condicional', 'perífrasis', 'registro formal', 'colocación'],
