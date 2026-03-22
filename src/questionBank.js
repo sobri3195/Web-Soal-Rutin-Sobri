@@ -1,5 +1,9 @@
 export const moduleConfigs = [
-  { name: 'Matematika Simak UI', tag: 'Analitik Kuantitatif', questionCount: 200 },
+  {
+    name: 'Matematika Simak UI',
+    tag: 'Analitik Kuantitatif • Hard mode berbasis riset',
+    questionCount: 200,
+  },
   { name: 'Matematika LPDP', tag: 'Reasoning Numerik', questionCount: 200 },
   { name: 'Tes Substansi LPDP', tag: 'Kebijakan & Kepemimpinan', questionCount: 150 },
   { name: 'Tes Potensi Akademik', tag: 'Verbal & Logika', questionCount: 200 },
@@ -13,6 +17,27 @@ export const moduleConfigs = [
   { name: 'Bahasa Spanyol', tag: 'Español Intermedio', questionCount: 100 },
   { name: 'Tes IQ', tag: 'Penalaran & Pola', questionCount: 150 },
 ];
+
+export const moduleResearchNotes = {
+  'Matematika Simak UI': {
+    summary: 'Prioritas soal sulit disusun dari topik paling sering muncul pada Matematika dasar dan Matematika IPA SIMAK UI, lalu dinaikkan levelnya dengan multi-step reasoning dan jebakan konseptual.',
+    priorities: [
+      'Frekuensi tinggi: peluang, persamaan kuadrat, fungsi komposisi/invers, barisan-deret, pertidaksamaan, SPL/SPLK, logaritma, matriks.',
+      'Frekuensi tinggi saintek: trigonometri, dimensi tiga, suku banyak, limit, barisan-deret.',
+      'Frekuensi menengah untuk variasi sulit: integral, vektor, statistika, program linear, persamaan lingkaran, turunan/optimasi.',
+    ],
+    sources: [
+      {
+        label: 'Pahamify — Persebaran materi SIMAK UI 2011–2019',
+        url: 'https://pahamify.com/blog/persebaran-materi-simak-ui/',
+      },
+      {
+        label: 'detikEdu — Materi SIMAK UI 2025 (Matematika dalam TKD)',
+        url: 'https://www.detik.com/edu/seleksi-masuk-pt/d-7947124/pendaftaran-simak-ui-2025-resmi-dibuka-melalui-enrollment-ui-ac-id-cek-biayanya',
+      },
+    ],
+  },
+};
 
 export const modules = moduleConfigs.map((module) => module.name);
 export const DEFAULT_QUESTION_COUNT_PER_MODULE = 200;
@@ -47,119 +72,263 @@ const buildNumericOptions = (answer, variants, seed, formatter = (value) => Stri
 };
 
 const quantContexts = [
-  'program akselerasi riset',
-  'simulasi seleksi nasional',
-  'analisis data laboratorium',
-  'perencanaan kapasitas kelas',
-  'optimasi distribusi logistik',
-  'monitoring performa startup',
-  'evaluasi beban kerja analis',
-  'pemodelan investasi beasiswa',
+  'simulasi audit data seleksi',
+  'pemodelan kapasitas ruang ujian',
+  'analisis performa tryout nasional',
+  'optimasi distribusi logistik kampus',
+  'evaluasi reliabilitas skor kuantitatif',
+  'penjadwalan kelas intensif',
+  'pengolahan sampel laboratorium',
+  'perencanaan pipeline riset mahasiswa',
 ];
+
+const countIntegersInInterval = (min, max) => Math.max(0, Math.floor(max) - Math.ceil(min) + 1);
 
 const createAdvancedSimakMathQuestion = (moduleName, index) => {
   const n = index + 1;
-  const topic = index % 8;
+  const topic = index % 20;
+  const cycle = Math.floor(index / 20);
   const seed = seeded(moduleName, index);
-  const context = pick(quantContexts, seed);
+  const context = pick(quantContexts, seed + cycle);
 
   const variants = [
     () => {
-      const a = (seed % 5) + 2;
-      const b = ((seed >> 2) % 7) + 3;
-      const c = ((seed >> 4) % 6) + 2;
-      const answer = a * (b + c);
+      const total = 12 + cycle;
+      const mathOnly = 4 + (cycle % 4);
+      const englishOnly = 3 + (cycle % 3);
+      const both = total - mathOnly - englishOnly;
+      const denominator = total - englishOnly;
+      const answer = `${both}/${denominator}`;
       return {
-        prompt: `[Sulit • Aljabar Parametrik] Dalam ${context}, diketahui f(x)=${a}x-${b} dan g(x)=x+${c}. Nilai f(g(${b})) yang benar adalah...`,
-        answer: String(answer),
-        explanation: `g(${b}) = ${b + c}. Maka f(${b + c}) = ${a}(${b + c}) - ${b} = ${answer}.`,
-        options: buildNumericOptions(answer, [answer + a, answer - c, answer + b + c], seed),
-      };
-    },
-    () => {
-      const p = (seed % 4) + 2;
-      const q = ((seed >> 3) % 5) + 3;
-      const r = ((seed >> 5) % 4) + 2;
-      const answer = p * q - r;
-      return {
-        prompt: `[Sulit • Persamaan Kuadrat] Pada ${context}, akar-akar persamaan x²-${p + q}x+${p * q}=0 adalah p dan q. Berapakah p·q-r jika r=${r}?`,
-        answer: String(answer),
-        explanation: `Dari bentuk persamaan, hasil kali akar = ${p * q}. Maka p·q-r = ${p * q}-${r} = ${answer}.`,
-        options: buildNumericOptions(answer, [answer + r, answer - p, p + q + r], seed),
-      };
-    },
-    () => {
-      const start = (seed % 6) + 2;
-      const diff = ((seed >> 2) % 5) + 3;
-      const count = ((seed >> 4) % 4) + 5;
-      const answer = (count / 2) * ((2 * start) + ((count - 1) * diff));
-      return {
-        prompt: `[Sulit • Deret Aritmetika] Untuk ${context}, suku pertama barisan adalah ${start}, beda ${diff}, dan diambil ${count} suku pertama. Jumlah suku-suku tersebut adalah...`,
-        answer: String(answer),
-        explanation: `Sn = n/2 [2a + (n-1)b] = ${count}/2 [${2 * start} + ${(count - 1) * diff}] = ${answer}.`,
-        options: buildNumericOptions(answer, [answer + diff, answer - start, answer + count], seed),
-      };
-    },
-    () => {
-      const a = (seed % 5) + 2;
-      const b = ((seed >> 2) % 4) + 2;
-      const c = ((seed >> 5) % 5) + 1;
-      const numerator = a ** 2 - b ** 2;
-      const denominator = a - b;
-      const answer = denominator === 0 ? a + b : numerator / denominator + c;
-      return {
-        prompt: `[Sulit • Faktorisasi] Dalam ${context}, hitung nilai (( ${a}² - ${b}² ) / (${a} - ${b})) + ${c}.`,
-        answer: String(answer),
-        explanation: `a²-b²=(a-b)(a+b), sehingga pecahan menjadi a+b=${a + b}. Tambah ${c} menghasilkan ${answer}.`,
-        options: buildNumericOptions(answer, [answer + 1, answer - 2, (a * b) + c], seed),
-      };
-    },
-    () => {
-      const coeff = (seed % 4) + 2;
-      const x = ((seed >> 2) % 5) + 2;
-      const y = ((seed >> 4) % 4) + 3;
-      const answer = coeff * (x ** 2) - y;
-      return {
-        prompt: `[Sulit • Fungsi Kuadrat] Pada ${context}, jika h(t)=${coeff}t²-${y}, maka h(${x}) = ...`,
-        answer: String(answer),
-        explanation: `Substitusi langsung: ${coeff}(${x}²)-${y} = ${coeff * (x ** 2)}-${y} = ${answer}.`,
-        options: buildNumericOptions(answer, [answer + x, answer - coeff, answer + y], seed),
-      };
-    },
-    () => {
-      const total = ((seed % 8) + 7) * 12;
-      const ratioA = ((seed >> 2) % 5) + 2;
-      const ratioB = ((seed >> 5) % 4) + 3;
-      const answer = (total * ratioA) / (ratioA + ratioB);
-      return {
-        prompt: `[Sulit • Perbandingan] Dalam ${context}, dua divisi berbagi ${total} unit sumber daya dengan rasio ${ratioA}:${ratioB}. Jatah divisi pertama adalah...`,
-        answer: String(answer),
-        explanation: `Bagian pertama = ${total} × ${ratioA}/${ratioA + ratioB} = ${answer}.`,
-        options: buildNumericOptions(answer, [answer + ratioB, answer - ratioA, total / 2], seed),
-      };
-    },
-    () => {
-      const a = (seed % 3) + 2;
-      const b = ((seed >> 2) % 6) + 5;
-      const discriminant = b ** 2 - (4 * a * 3);
-      const answer = discriminant > 0 ? '2 akar real berbeda' : discriminant === 0 ? '1 akar real kembar' : 'Tidak memiliki akar real';
-      return {
-        prompt: `[Sulit • Diskriminan] Untuk model ${context}, berapa banyak akar real persamaan ${a}x²+${b}x+3=0?`,
+        prompt: `[Sulit • Peluang Bersyarat] Di ${context}, dari ${total} peserta terdapat ${mathOnly} hanya lolos simulasi Matematika, ${englishOnly} hanya lolos Bahasa Inggris, dan sisanya lolos keduanya. Jika dipilih acak seorang peserta yang diketahui lolos Matematika, peluang ia juga lolos Bahasa Inggris adalah...`,
         answer,
-        explanation: `Diskriminan D = ${b}² - 4(${a})(3) = ${discriminant}. Tanda diskriminan menentukan banyak akar real.`,
-        options: shuffleDeterministic(['2 akar real berbeda', '1 akar real kembar', 'Tidak memiliki akar real', 'Tak hingga banyak akar'], seed),
+        explanation: `Peserta yang lolos keduanya = ${both}. Yang lolos Matematika = ${mathOnly + both}. Jadi peluang bersyarat = ${both}/${mathOnly + both} = ${answer}.`,
+        options: shuffleDeterministic([answer, `${both}/${total}`, `${mathOnly}/${denominator}`, `${englishOnly}/${denominator}`], seed),
       };
     },
     () => {
-      const base = (seed % 4) + 2;
-      const exponent = ((seed >> 3) % 3) + 3;
-      const multiplier = ((seed >> 5) % 4) + 2;
-      const answer = (base ** exponent) / (base ** (exponent - 2)) + multiplier;
+      const r1 = cycle + 2;
+      const r2 = cycle + 5;
+      const shift = 3 + (cycle % 3);
+      const answer = r1 ** 2 + r2 ** 2 - shift;
       return {
-        prompt: `[Sulit • Eksponen] Dalam ${context}, nilai ${base}^${exponent} / ${base}^${exponent - 2} + ${multiplier} adalah...`,
+        prompt: `[Sulit • Persamaan Kuadrat] Pada ${context}, persamaan x²-${r1 + r2}x+${r1 * r2}=0 memiliki akar α dan β. Nilai α²+β²-${shift} adalah...`,
         answer: String(answer),
-        explanation: `Gunakan a^m/a^n = a^(m-n). Diperoleh ${base}² + ${multiplier} = ${base ** 2} + ${multiplier} = ${answer}.`,
-        options: buildNumericOptions(answer, [answer + base, answer - 1, (base ** 2) - multiplier], seed),
+        explanation: `α+β=${r1 + r2} dan αβ=${r1 * r2}. Maka α²+β²=(α+β)²-2αβ=${(r1 + r2) ** 2}-2(${r1 * r2})=${r1 ** 2 + r2 ** 2}. Kurangi ${shift} menjadi ${answer}.`,
+        options: buildNumericOptions(answer, [answer + shift, answer - (cycle + 1), (r1 + r2) ** 2 - shift], seed),
+      };
+    },
+    () => {
+      const a = cycle + 2;
+      const b = cycle + 3;
+      const c = cycle + 4;
+      const input = cycle + 1;
+      const answer = a * (input + b) - c;
+      return {
+        prompt: `[Sulit • Fungsi Komposisi] Dalam ${context}, diketahui f(x)=${a}x-${c} dan g(x)=x+${b}. Nilai (f∘g)(${input}) adalah...`,
+        answer: String(answer),
+        explanation: `g(${input})=${input + b}. Maka f(g(${input}))=${a}(${input + b})-${c}=${answer}.`,
+        options: buildNumericOptions(answer, [answer + a, answer - b, (a * input) + b - c], seed),
+      };
+    },
+    () => {
+      const first = 5 + cycle;
+      const diff = 2 + (cycle % 3);
+      const terms = 7 + (cycle % 4);
+      const answer = (terms / 2) * ((2 * first) + ((terms - 1) * diff));
+      return {
+        prompt: `[Sulit • Barisan & Deret] Pada ${context}, suku pertama deret aritmetika ${first}, bedanya ${diff}, dan diambil ${terms} suku pertama. Jumlah deret tersebut adalah...`,
+        answer: String(answer),
+        explanation: `Sn = n/2 [2a + (n-1)b] = ${terms}/2 [${2 * first} + ${(terms - 1) * diff}] = ${answer}.`,
+        options: buildNumericOptions(answer, [answer + diff, answer - first, answer + terms], seed),
+      };
+    },
+    () => {
+      const lower = -(cycle + 4);
+      const upper = cycle + 6;
+      const answer = countIntegersInInterval(lower, upper);
+      return {
+        prompt: `[Sulit • Pertidaksamaan Nilai Mutlak] Di ${context}, banyak bilangan bulat yang memenuhi |x-1| ≤ ${cycle + 5} adalah...`,
+        answer: String(answer),
+        explanation: `|x-1| ≤ ${cycle + 5} setara dengan ${lower} ≤ x ≤ ${upper}. Banyak bilangan bulat pada interval itu adalah ${answer}.`,
+        options: buildNumericOptions(answer, [answer + 1, answer - 2, upper - lower], seed),
+      };
+    },
+    () => {
+      const x = cycle + 2;
+      const y = cycle + 4;
+      const answer = 3 * x + 2 * y;
+      return {
+        prompt: `[Sulit • SPLDV] Dalam ${context}, pasangan (x,y) memenuhi x+y=${x + y} dan x-y=${x - y}. Nilai 3x+2y adalah...`,
+        answer: String(answer),
+        explanation: `Dari sistem diperoleh x=${x} dan y=${y}. Jadi 3x+2y=3(${x})+2(${y})=${answer}.`,
+        options: buildNumericOptions(answer, [answer + x, answer - y, (2 * x) + (3 * y)], seed),
+      };
+    },
+    () => {
+      const base = 2 + (cycle % 3);
+      const exponent = cycle + 2;
+      const shift = 1 + (cycle % 4);
+      const answer = exponent + shift;
+      return {
+        prompt: `[Sulit • Logaritma] Pada ${context}, jika log_${base}(${base ** exponent}) + ${shift} = k, maka nilai k adalah...`,
+        answer: String(answer),
+        explanation: `log_${base}(${base ** exponent})=${exponent}. Tambah ${shift} menghasilkan ${answer}.`,
+        options: buildNumericOptions(answer, [answer + 1, answer - shift, exponent * shift], seed),
+      };
+    },
+    () => {
+      const a = cycle + 2;
+      const d = cycle + 5;
+      const b = 2 + (cycle % 3);
+      const c = 1 + (cycle % 2);
+      const answer = (a * d) - (b * c);
+      return {
+        prompt: `[Sulit • Matriks] Determinan matriks [[${a}, ${b}], [${c}, ${d}]] pada ${context} adalah...`,
+        answer: String(answer),
+        explanation: `det(A)=ad-bc=${a}×${d}-${b}×${c}=${answer}.`,
+        options: buildNumericOptions(answer, [answer + b, answer - c, (a * c) + (b * d)], seed),
+      };
+    },
+    () => {
+      const k = cycle + 2;
+      const answer = 2 * k;
+      return {
+        prompt: `[Sulit • Trigonometri] Untuk ${context}, jika sin θ = 3/5 dan θ di kuadran I, maka nilai 5cos θ + ${cycle + 1} adalah...`,
+        answer: String(answer),
+        explanation: `Karena sin θ=3/5, maka cos θ=4/5. Jadi 5cos θ + ${cycle + 1} = 4 + ${cycle + 1} = ${answer}.`,
+        options: buildNumericOptions(answer, [answer + 1, answer - 2, 5 + cycle], seed),
+      };
+    },
+    () => {
+      const p = cycle + 1;
+      const q = cycle + 2;
+      const r = cycle + 3;
+      const wrong2 = p + q + r;
+      const wrong3 = (p ** 2) + (q ** 2) + (r ** 2);
+      return {
+        prompt: `[Sulit • Dimensi Tiga] Dalam ${context}, balok memiliki rusuk ${p}, ${q}, dan ${r}. Panjang diagonal ruangnya adalah...`,
+        answer: `√${(p ** 2) + (q ** 2) + (r ** 2)}`,
+        explanation: `Diagonal ruang balok = √(p²+q²+r²) = √(${p ** 2}+${q ** 2}+${r ** 2}) = √${(p ** 2) + (q ** 2) + (r ** 2)}.`,
+        options: shuffleDeterministic([`√${(p ** 2) + (q ** 2) + (r ** 2)}`, `√${(p ** 2) + (q ** 2)}`, String(wrong2), String(wrong3)], seed),
+      };
+    },
+    () => {
+      const root = cycle + 2;
+      const rem = cycle + 3;
+      const value = ((root ** 2) - 3 * root + 5);
+      const answer = value - rem;
+      return {
+        prompt: `[Sulit • Suku Banyak] Misalkan P(x)=x²-3x+5. Pada ${context}, sisa pembagian P(x) oleh (x-${root}) adalah r. Nilai r-${rem} sama dengan...`,
+        answer: String(answer),
+        explanation: `Teorema sisa memberi r=P(${root})=${value}. Maka r-${rem}=${value}-${rem}=${answer}.`,
+        options: buildNumericOptions(answer, [answer + rem, answer - root, value + rem], seed),
+      };
+    },
+    () => {
+      const a = cycle + 3;
+      const b = cycle + 1;
+      const answer = 2 * a;
+      return {
+        prompt: `[Sulit • Limit] Pada ${context}, nilai limit lim x→${a} (x²-${a ** 2})/(x-${a}) + ${b} adalah...`,
+        answer: String(answer + b),
+        explanation: `Faktorkan x²-${a ** 2}=(x-${a})(x+${a}), sehingga limit pecahan = 2${a}. Tambah ${b} menghasilkan ${answer + b}.`,
+        options: buildNumericOptions(answer + b, [answer + b + 1, answer, (a ** 2) + b], seed),
+      };
+    },
+    () => {
+      const a = cycle + 2;
+      const b = cycle + 5;
+      const answer = (b ** 2 - a ** 2) / 2;
+      return {
+        prompt: `[Sulit • Integral Tentu] Dalam ${context}, nilai ∫_${a}^${b} x dx adalah...`,
+        answer: String(answer),
+        explanation: `∫x dx = x²/2. Jadi hasilnya = (${b}²-${a}²)/2 = (${b ** 2}-${a ** 2})/2 = ${answer}.`,
+        options: buildNumericOptions(answer, [answer + a, answer - b, (b - a) * ((a + b) / 2)], seed),
+      };
+    },
+    () => {
+      const u1 = cycle + 1;
+      const u2 = cycle + 3;
+      const v1 = cycle + 2;
+      const v2 = cycle + 4;
+      const answer = (u1 * v1) + (u2 * v2);
+      return {
+        prompt: `[Sulit • Vektor] Pada ${context}, jika u=(${u1},${u2}) dan v=(${v1},${v2}), maka hasil dot product u·v adalah...`,
+        answer: String(answer),
+        explanation: `u·v = ${u1}(${v1}) + ${u2}(${v2}) = ${answer}.`,
+        options: buildNumericOptions(answer, [answer + u1, answer - v2, (u1 + u2) * (v1 + v2)], seed),
+      };
+    },
+    () => {
+      const n1 = 12 + cycle;
+      const n2 = 8 + cycle;
+      const mean1 = 70 + cycle;
+      const mean2 = 82 + cycle;
+      const total = (n1 * mean1) + (n2 * mean2);
+      const answer = total / (n1 + n2);
+      return {
+        prompt: `[Sulit • Statistika] Dalam ${context}, kelompok A berisi ${n1} data dengan rata-rata ${mean1}, kelompok B berisi ${n2} data dengan rata-rata ${mean2}. Rata-rata gabungannya adalah...`,
+        answer: String(answer),
+        explanation: `Mean gabungan = (${n1}×${mean1} + ${n2}×${mean2}) / (${n1}+${n2}) = ${total}/${n1 + n2} = ${answer}.`,
+        options: buildNumericOptions(answer, [answer + 1, answer - 2, (mean1 + mean2) / 2], seed),
+      };
+    },
+    () => {
+      const x = 2 + cycle;
+      const y = 4 + cycle;
+      const answer = (3 * x) + (2 * y);
+      return {
+        prompt: `[Sulit • Program Linear] Pada ${context}, titik pojok optimum suatu model berada di (${x},${y}). Jika fungsi objektifnya Z=3x+2y, maka nilai optimum Z adalah...`,
+        answer: String(answer),
+        explanation: `Substitusi titik pojok optimum: Z=3(${x})+2(${y})=${answer}.`,
+        options: buildNumericOptions(answer, [answer + x, answer - y, (2 * x) + (3 * y)], seed),
+      };
+    },
+    () => {
+      const h = cycle + 2;
+      const k = cycle + 1;
+      const r = cycle + 4;
+      const answer = r ** 2;
+      return {
+        prompt: `[Sulit • Persamaan Lingkaran] Dalam ${context}, lingkaran berpusat di (${h},${k}) dan melalui titik (${h + r},${k}). Nilai konstanta di ruas kanan bentuk (x-${h})²+(y-${k})² = ... adalah...`,
+        answer: String(answer),
+        explanation: `Jari-jari = ${r}, sehingga r²=${answer}.`,
+        options: buildNumericOptions(answer, [answer + r, answer - h, 2 * answer], seed),
+      };
+    },
+    () => {
+      const base = 2 + (cycle % 4);
+      const exponent = cycle + 3;
+      const answer = exponent - 1;
+      return {
+        prompt: `[Sulit • Eksponen-Logaritma] Pada ${context}, jika log_${base}(${base ** exponent}) - 1 = m, maka nilai m adalah...`,
+        answer: String(answer),
+        explanation: `log_${base}(${base ** exponent})=${exponent}. Kurangi 1 menjadi ${answer}.`,
+        options: buildNumericOptions(answer, [answer + 1, exponent, exponent + 1], seed),
+      };
+    },
+    () => {
+      const nObj = 6 + cycle;
+      const take = 2;
+      const answer = (nObj * (nObj - 1)) / 2;
+      return {
+        prompt: `[Sulit • Kombinatorika] Dalam ${context}, dari ${nObj} calon tutor akan dipilih ${take} orang tanpa memperhatikan urutan. Banyak cara pemilihannya adalah...`,
+        answer: String(answer),
+        explanation: `Banyak cara = C(${nObj},2) = ${nObj}(${nObj}-1)/2 = ${answer}.`,
+        options: buildNumericOptions(answer, [answer + nObj, answer - 1, nObj * (nObj - 1)], seed),
+      };
+    },
+    () => {
+      const vertex = cycle + 2;
+      const minimum = -(cycle + 5);
+      const x = vertex + 1;
+      const answer = ((x - vertex) ** 2) + minimum;
+      return {
+        prompt: `[Sulit • Turunan & Optimasi] Pada ${context}, fungsi f(x)=(x-${vertex})²${minimum < 0 ? minimum : `+${minimum}`}. Nilai minimum lokal fungsi tersebut adalah...`,
+        answer: String(minimum),
+        explanation: `Bentuk puncak menunjukkan nilai minimum terjadi saat x=${vertex}, yaitu ${minimum}. Nilai f(${x})=${answer} hanya sebagai pengecekan bahwa titik lain lebih besar.`,
+        options: buildNumericOptions(minimum, [minimum + 1, minimum - 2, answer], seed),
       };
     },
   ];
@@ -1035,6 +1204,18 @@ const ensureUniquePrompts = (items, type) => {
   });
 };
 
+const validateUniqueness = (items, type) => {
+  const seen = new Set();
+  items.forEach((item) => {
+    const value = type === 'flashcards' ? item.front : item.prompt;
+    const key = `${type}-${item.module}-${value}`;
+    if (seen.has(key)) {
+      throw new Error(`Duplicate ${type} detected for ${item.module}: ${value}`);
+    }
+    seen.add(key);
+  });
+};
+
 const buildQuestionBank = () => {
   const mcq = [];
   const essay = [];
@@ -1048,11 +1229,17 @@ const buildQuestionBank = () => {
     }
   });
 
-  return {
+  const bank = {
     mcq: ensureUniquePrompts(mcq, 'mcq'),
     essay: ensureUniquePrompts(essay, 'essay'),
     flashcards: ensureUniquePrompts(flashcards, 'flashcards'),
   };
+
+  validateUniqueness(bank.mcq, 'mcq');
+  validateUniqueness(bank.essay, 'essay');
+  validateUniqueness(bank.flashcards, 'flashcards');
+
+  return bank;
 };
 
 export const questionBank = buildQuestionBank();
