@@ -13,6 +13,11 @@ Frontend React (Vite) untuk latihan soal dengan 3 mode utama:
 - ✅ **Mobile responsive** (sidebar, statistik, toolbar, dan pagination adaptif).
 - ✅ **Fitur pembelajaran lengkap**:
   - pencarian soal,
+  - bookmark/favorit lintas mode,
+  - navigator nomor soal interaktif untuk lompat cepat,
+  - template jawaban essai sekali klik,
+  - review ulang flashcard yang belum mantap,
+  - readiness score dan rekomendasi belajar berikutnya,
   - progress tracker,
   - statistik jawaban benar,
   - pagination 10 soal per halaman,

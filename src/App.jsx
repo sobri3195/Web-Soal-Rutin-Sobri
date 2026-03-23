@@ -9,7 +9,7 @@ import {
   questionBank,
 } from './questionBank';
 
-const STORAGE_KEY = 'sobri-practice-state-v3';
+const STORAGE_KEY = 'sobri-practice-state-v4';
 const VALID_TYPES = ['mcq', 'essay', 'flashcards'];
 const VALID_MCQ_FILTERS = ['all', 'unanswered', 'correct', 'wrong'];
 const asRecord = (value) => (value && typeof value === 'object' && !Array.isArray(value) ? value : {});
@@ -22,10 +22,12 @@ const initialState = {
   essayAnswers: {},
   flashcardFlips: {},
   masteredFlashcards: {},
+  favorites: {},
   query: '',
   page: 1,
   mcqFilter: 'all',
   showMasteredFlashcards: true,
+  showBookmarkedOnly: false,
   darkMode: true,
 };
 
@@ -52,6 +54,7 @@ function App() {
     safe.essayAnswers = asRecord(snapshot.essayAnswers);
     safe.flashcardFlips = asRecord(snapshot.flashcardFlips);
     safe.masteredFlashcards = asRecord(snapshot.masteredFlashcards);
+    safe.favorites = asRecord(snapshot.favorites);
     if (typeof snapshot.query === 'string') {
       safe.query = snapshot.query;
     }
@@ -63,6 +66,9 @@ function App() {
     }
     if (typeof snapshot.showMasteredFlashcards === 'boolean') {
       safe.showMasteredFlashcards = snapshot.showMasteredFlashcards;
+    }
+    if (typeof snapshot.showBookmarkedOnly === 'boolean') {
+      safe.showBookmarkedOnly = snapshot.showBookmarkedOnly;
     }
     if (typeof snapshot.darkMode === 'boolean') {
       safe.darkMode = snapshot.darkMode;
@@ -106,6 +112,11 @@ function App() {
   const moduleQuestionCount = moduleMeta?.questionCount || DEFAULT_QUESTION_COUNT_PER_MODULE;
   const moduleResearch = moduleResearchNotes[state.selectedModule];
 
+  const moduleMcq = moduleQuestionMap[state.selectedModule]?.mcq || [];
+  const moduleEssay = moduleQuestionMap[state.selectedModule]?.essay || [];
+  const moduleFlashcards = moduleQuestionMap[state.selectedModule]?.flashcards || [];
+  const moduleFavorites = [...moduleMcq, ...moduleEssay, ...moduleFlashcards].filter((item) => state.favorites[item.id]).length;
+
   const filteredItems = useMemo(() => {
     const list = questionBank[state.selectedType] || [];
     const normalizedQuery = state.query.trim().toLowerCase();
@@ -119,9 +130,10 @@ function App() {
           ? `${item.front} ${item.back}`.toLowerCase()
           : item.prompt.toLowerCase();
       const matchesQuery = !normalizedQuery || searchable.includes(normalizedQuery);
+      const matchesBookmark = !state.showBookmarkedOnly || !!state.favorites[item.id];
 
       if (state.selectedType !== 'mcq') {
-        return matchesQuery;
+        return matchesQuery && matchesBookmark;
       }
 
       const selectedAnswer = state.mcqAnswers[item.id];
@@ -131,11 +143,10 @@ function App() {
         (state.mcqFilter === 'correct' && selectedAnswer === item.answer) ||
         (state.mcqFilter === 'wrong' && selectedAnswer && selectedAnswer !== item.answer);
 
-      return matchesQuery && matchesFilter;
+      return matchesQuery && matchesFilter && matchesBookmark;
     });
-  }, [state.selectedModule, state.selectedType, state.query, state.mcqAnswers, state.mcqFilter]);
+  }, [state.selectedModule, state.selectedType, state.query, state.mcqAnswers, state.mcqFilter, state.showBookmarkedOnly, state.favorites]);
 
-  // Filter flashcards for mastered toggle
   const displayItems = useMemo(() => {
     if (state.selectedType !== 'flashcards' || state.showMasteredFlashcards) {
       return filteredItems;
@@ -147,23 +158,18 @@ function App() {
   const currentPage = Math.min(state.page, totalPages);
   const pagedItems = displayItems.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
-  const moduleMcq = moduleQuestionMap[state.selectedModule]?.mcq || [];
-  const moduleEssay = moduleQuestionMap[state.selectedModule]?.essay || [];
-  const moduleFlashcards = moduleQuestionMap[state.selectedModule]?.flashcards || [];
-
   const answeredCount = moduleMcq.filter((q) => state.mcqAnswers[q.id]).length;
   const correctCount = moduleMcq.filter((q) => state.mcqAnswers[q.id] === q.answer).length;
   const progressPercent = moduleMcq.length > 0 ? Math.round((answeredCount / moduleMcq.length) * 100) : 0;
   const essayAnsweredCount = moduleEssay.filter((q) => (state.essayAnswers[q.id] || '').trim()).length;
   const masteredFlashcardsCount = moduleFlashcards.filter((q) => state.masteredFlashcards[q.id]).length;
 
-  // Calculate accuracy rate
   const accuracyRate = answeredCount > 0 ? Math.round((correctCount / answeredCount) * 100) : 0;
   const remainingMcqCount = moduleMcq.length - answeredCount;
   const filteredSummary = displayItems.length === filteredItems.length
     ? `${displayItems.length} item tampil`
     : `${displayItems.length} dari ${filteredItems.length} item tampil`;
-  const canResetView = state.page > 1 || !!state.query || state.mcqFilter !== 'all' || !state.showMasteredFlashcards;
+  const canResetView = state.page > 1 || !!state.query || state.mcqFilter !== 'all' || !state.showMasteredFlashcards || state.showBookmarkedOnly;
 
   const typeSummary =
     state.selectedType === 'mcq'
@@ -187,6 +193,7 @@ function App() {
             helper: `${moduleFlashcards.length - masteredFlashcardsCount} kartu belum dikuasai`,
           };
   const typeProgressPercent = typeSummary.total > 0 ? Math.round((typeSummary.done / typeSummary.total) * 100) : 0;
+  const readinessScore = Math.round(((accuracyRate * 0.45) + (progressPercent * 0.35) + ((typeProgressPercent || 0) * 0.2)) || 0);
 
   const moduleCompletionMap = useMemo(() => {
     return moduleConfigs.reduce((acc, module) => {
@@ -199,10 +206,30 @@ function App() {
     }, {});
   }, [state.mcqAnswers]);
 
+  const overallFavorites = Object.values(state.favorites).filter(Boolean).length;
+  const nextAction = state.selectedType === 'mcq'
+    ? remainingMcqCount > 0
+      ? `Selesaikan ${remainingMcqCount} MCQ tersisa agar progress modul menyentuh 100%.`
+      : 'Semua MCQ di modul ini sudah selesai. Lanjutkan review jawaban salah untuk menaikkan akurasi.'
+    : state.selectedType === 'essay'
+      ? essayAnsweredCount < moduleEssay.length
+        ? `Masih ada ${moduleEssay.length - essayAnsweredCount} essai kosong. Isi poin-poin penting lalu rapikan argumen.`
+        : 'Semua essai sudah terisi. Sekarang fokus revisi kualitas jawaban terbaikmu.'
+      : masteredFlashcardsCount < moduleFlashcards.length
+        ? `Masih ada ${moduleFlashcards.length - masteredFlashcardsCount} flashcard belum dikuasai. Gunakan filter bookmark untuk fokus review.`
+        : 'Semua flashcard sudah dikuasai. Pertahankan dengan sesi review acak.';
+
   const jumpToRandomQuestion = () => {
     if (!displayItems.length) return;
     const randomIndex = Math.floor(Math.random() * displayItems.length);
     updateState({ page: Math.floor(randomIndex / PAGE_SIZE) + 1 });
+  };
+
+  const jumpToItem = (itemId) => {
+    const targetIndex = displayItems.findIndex((item) => item.id === itemId);
+    if (targetIndex === -1) return;
+    updateState({ page: Math.floor(targetIndex / PAGE_SIZE) + 1 });
+    setToast('Navigasi soal diperbarui.');
   };
 
   const jumpToFirstUnanswered = () => {
@@ -212,7 +239,7 @@ function App() {
       setToast('Semua MCQ sudah terjawab. Mantap! 🎉');
       return;
     }
-    updateState({ mcqFilter: 'all', page: Math.floor(firstUnansweredIndex / PAGE_SIZE) + 1 });
+    updateState({ mcqFilter: 'all', page: Math.floor(firstUnansweredIndex / PAGE_SIZE) + 1, showBookmarkedOnly: false });
     setToast(`Lanjut ke soal MCQ #${firstUnansweredIndex + 1}`);
   };
 
@@ -228,7 +255,7 @@ function App() {
     }
     const firstWrongQuestion = wrongItems[0];
     const firstWrongIndex = moduleMcq.findIndex((q) => q.id === firstWrongQuestion.id);
-    updateState({ mcqFilter: 'wrong', page: 1 });
+    updateState({ mcqFilter: 'wrong', page: 1, showBookmarkedOnly: false });
     setToast(`Review soal salah dimulai dari #${firstWrongIndex + 1}`);
   };
 
@@ -239,7 +266,7 @@ function App() {
       setToast('Semua essai di modul ini sudah terisi. Mantap! 🎉');
       return;
     }
-    updateState({ page: Math.floor(firstUnansweredIndex / PAGE_SIZE) + 1 });
+    updateState({ page: Math.floor(firstUnansweredIndex / PAGE_SIZE) + 1, showBookmarkedOnly: false });
     setToast(`Lanjut ke essai #${firstUnansweredIndex + 1}`);
   };
 
@@ -250,8 +277,49 @@ function App() {
       setToast('Semua flashcard di modul ini sudah dikuasai. Keren! 🌟');
       return;
     }
-    updateState({ showMasteredFlashcards: false, page: 1 });
+    updateState({ showMasteredFlashcards: false, showBookmarkedOnly: false, page: 1 });
     setToast(`Fokus ulang dari kartu #${firstUnmasteredIndex + 1}`);
+  };
+
+  const toggleFavorite = (itemId) => {
+    const nextValue = !state.favorites[itemId];
+    updateState({
+      favorites: {
+        ...state.favorites,
+        [itemId]: nextValue,
+      },
+    });
+    setToast(nextValue ? 'Item ditandai sebagai favorit.' : 'Item dihapus dari favorit.');
+  };
+
+  const clearMcqAnswer = (questionId) => {
+    const nextAnswers = { ...state.mcqAnswers };
+    const nextExplanations = { ...state.mcqShowExplanation };
+    delete nextAnswers[questionId];
+    delete nextExplanations[questionId];
+    updateState({ mcqAnswers: nextAnswers, mcqShowExplanation: nextExplanations });
+    setToast('Jawaban MCQ dibersihkan.');
+  };
+
+  const clearEssayAnswer = (questionId) => {
+    const nextAnswers = { ...state.essayAnswers };
+    delete nextAnswers[questionId];
+    updateState({ essayAnswers: nextAnswers });
+    setToast('Jawaban essai dibersihkan.');
+  };
+
+  const markFlashcardReview = (cardId) => {
+    updateState({
+      flashcardFlips: {
+        ...state.flashcardFlips,
+        [cardId]: true,
+      },
+      masteredFlashcards: {
+        ...state.masteredFlashcards,
+        [cardId]: false,
+      },
+    });
+    setToast('Flashcard dipindahkan ke antrian review.');
   };
 
   useEffect(() => {
@@ -279,13 +347,14 @@ function App() {
       if (event.key === '2') onChangeType('essay');
       if (event.key === '3') onChangeType('flashcards');
       if (event.key.toLowerCase() === 'r') jumpToRandomQuestion();
+      if (event.key.toLowerCase() === 'b') updateState({ showBookmarkedOnly: !state.showBookmarkedOnly, page: 1 });
       if (event.key === '?') setShowShortcutHelp(true);
       if (event.key === 'Escape') setShowShortcutHelp(false);
     };
 
     window.addEventListener('keydown', onKeydown);
     return () => window.removeEventListener('keydown', onKeydown);
-  }, [currentPage, totalPages]);
+  }, [currentPage, totalPages, state.showBookmarkedOnly]);
 
   useEffect(() => {
     const contentEl = contentRef.current;
@@ -364,9 +433,11 @@ function App() {
       essayAnswers: filteredObject(state.essayAnswers, moduleEssayIds),
       flashcardFlips: filteredObject(state.flashcardFlips, moduleFlashcardIds),
       masteredFlashcards: filteredObject(state.masteredFlashcards, moduleFlashcardIds),
+      favorites: filteredObject(state.favorites, new Set([...moduleQuestionIds, ...moduleEssayIds, ...moduleFlashcardIds])),
       page: 1,
       query: '',
       mcqFilter: 'all',
+      showBookmarkedOnly: false,
     });
     setToast(`Semua progress di modul ${state.selectedModule} sudah direset.`);
   };
@@ -390,11 +461,11 @@ function App() {
   };
 
   const onChangeModule = (moduleName) => {
-    updateState({ selectedModule: moduleName, page: 1, query: '', mcqFilter: 'all' });
+    updateState({ selectedModule: moduleName, page: 1, query: '', mcqFilter: 'all', showBookmarkedOnly: false });
   };
 
   const onChangeType = (type) => {
-    updateState({ selectedType: type, page: 1, query: '', mcqFilter: 'all' });
+    updateState({ selectedType: type, page: 1, query: '', mcqFilter: 'all', showBookmarkedOnly: false });
   };
 
   const resetViewState = () => {
@@ -403,6 +474,7 @@ function App() {
       query: '',
       mcqFilter: 'all',
       showMasteredFlashcards: true,
+      showBookmarkedOnly: false,
     });
     setToast('Tampilan berhasil direset ke default.');
   };
@@ -420,10 +492,12 @@ function App() {
         essayAnswers: state.essayAnswers,
         flashcardFlips: state.flashcardFlips,
         masteredFlashcards: state.masteredFlashcards,
+        favorites: state.favorites,
         query: '',
         page: 1,
         mcqFilter: 'all',
         showMasteredFlashcards: state.showMasteredFlashcards,
+        showBookmarkedOnly: state.showBookmarkedOnly,
         darkMode: state.darkMode,
       },
       stats: {
@@ -434,6 +508,7 @@ function App() {
         essayTotal: moduleEssay.length,
         flashcardsMastered: masteredFlashcardsCount,
         flashcardsTotal: moduleFlashcards.length,
+        favorites: moduleFavorites,
       },
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -471,6 +546,18 @@ function App() {
     } catch {
       setToast('File import tidak valid. Gunakan file hasil export aplikasi.');
     }
+  };
+
+  const getItemStatus = (item) => {
+    if (state.selectedType === 'mcq') {
+      const selected = state.mcqAnswers[item.id];
+      if (!selected) return 'pending';
+      return selected === item.answer ? 'correct' : 'wrong';
+    }
+    if (state.selectedType === 'essay') {
+      return (state.essayAnswers[item.id] || '').trim() ? 'answered' : 'pending';
+    }
+    return state.masteredFlashcards[item.id] ? 'mastered' : state.flashcardFlips[item.id] ? 'reviewing' : 'pending';
   };
 
   return (
@@ -588,15 +675,27 @@ function App() {
             </article>
           </section>
 
-          <section className="card progress-panel">
-            <div>
-              <p>{typeSummary.title}</p>
-              <strong>{typeProgressPercent}%</strong>
-              <p>{typeSummary.done}/{typeSummary.total} selesai • {typeSummary.helper}</p>
-            </div>
-            <div className="progress-track" aria-hidden="true">
-              <div className="progress-fill" style={{ width: `${typeProgressPercent}%` }} />
-            </div>
+          <section className="insight-grid">
+            <article className="card progress-panel">
+              <div>
+                <p>{typeSummary.title}</p>
+                <strong>{typeProgressPercent}%</strong>
+                <p>{typeSummary.done}/{typeSummary.total} selesai • {typeSummary.helper}</p>
+              </div>
+              <div className="progress-track" aria-hidden="true">
+                <div className="progress-fill" style={{ width: `${typeProgressPercent}%` }} />
+              </div>
+            </article>
+            <article className="card progress-panel">
+              <div>
+                <p>Readiness score</p>
+                <strong>{readinessScore}%</strong>
+                <p>{moduleFavorites} favorit di modul ini • {overallFavorites} favorit total</p>
+              </div>
+              <div className="progress-track" aria-hidden="true">
+                <div className="progress-fill warm" style={{ width: `${Math.min(readinessScore, 100)}%` }} />
+              </div>
+            </article>
           </section>
 
           <section className="toolbar card">
@@ -629,6 +728,14 @@ function App() {
                 Tampilkan yang sudah dikuasai
               </label>
             ) : null}
+            <label className="toggle-label bookmark-toggle">
+              <input
+                type="checkbox"
+                checked={state.showBookmarkedOnly}
+                onChange={(e) => updateState({ showBookmarkedOnly: e.target.checked, page: 1 })}
+              />
+              Hanya favorit
+            </label>
             <button className="ghost" onClick={jumpToRandomQuestion}>🎲 Soal acak</button>
             {canResetView && (
               <button className="ghost" onClick={resetViewState}>🔄 Reset tampilan</button>
@@ -649,13 +756,50 @@ function App() {
             <button className="ghost danger" onClick={resetCurrentType}>🗑️ Reset data</button>
           </section>
 
-          <section className="card progress-panel">
-            <p>
-              Ringkas cepat: {remainingMcqCount} MCQ belum dijawab di modul ini.
-              Gunakan tombol <strong>Review jawaban salah</strong> untuk fokus perbaikan.
-            </p>
-            <p className="subtle-info">{filteredSummary} • Shortcut: ←/→ halaman, 1/2/3 ganti mode, R soal acak, Ctrl/Cmd+K fokus cari.</p>
+          <section className="insight-grid compact-grid">
+            <article className="card progress-panel">
+              <p>
+                Ringkas cepat: {remainingMcqCount} MCQ belum dijawab di modul ini.
+                Gunakan tombol <strong>Review jawaban salah</strong> untuk fokus perbaikan.
+              </p>
+              <p className="subtle-info">{filteredSummary} • Shortcut: ←/→ halaman, 1/2/3 ganti mode, R soal acak, B toggle favorit, Ctrl/Cmd+K fokus cari.</p>
+            </article>
+            <article className="card progress-panel">
+              <p><strong>Rekomendasi belajar berikutnya</strong></p>
+              <p>{nextAction}</p>
+              <p className="subtle-info">Favorit cocok untuk menandai soal jebakan, template jawaban essai, atau flashcard yang ingin direview lagi.</p>
+            </article>
           </section>
+
+          {displayItems.length > 0 && (
+            <section className="card progress-panel">
+              <div className="question-map-header">
+                <div>
+                  <p>Peta navigasi cepat</p>
+                  <strong>{state.selectedType === 'flashcards' ? 'Flashcard Navigator' : 'Question Navigator'}</strong>
+                </div>
+                <p className="subtle-info">Klik nomor untuk lompat langsung. Warna menandakan status pengerjaan.</p>
+              </div>
+              <div className="question-map">
+                {displayItems.map((item, index) => {
+                  const status = getItemStatus(item);
+                  const isFavorite = !!state.favorites[item.id];
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      className={`question-chip ${status} ${pagedItems.some((entry) => entry.id === item.id) ? 'active' : ''}`}
+                      onClick={() => jumpToItem(item.id)}
+                      title={isFavorite ? 'Favorit' : 'Klik untuk lompat'}
+                    >
+                      <span>{index + 1}</span>
+                      {isFavorite ? <small>★</small> : null}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          )}
 
           {toast ? <div className="card toast" role="status" aria-live="polite">{toast}</div> : null}
 
@@ -663,30 +807,37 @@ function App() {
             <div className="card empty">
               {state.selectedType === 'flashcards' && !state.showMasteredFlashcards
                 ? 'Semua flashcard sudah dikuasai! 🎉 Atau coba aktifkan "Tampilkan yang sudah dikuasai"'
-                : 'Tidak ada konten sesuai pencarian. Coba kata kunci lain.'}
+                : state.showBookmarkedOnly
+                  ? 'Belum ada item favorit pada tampilan ini. Tambahkan bintang pada soal atau kartu yang ingin kamu simpan.'
+                  : 'Tidak ada konten sesuai pencarian. Coba kata kunci lain.'}
             </div>
           ) : null}
 
           {state.selectedType === 'mcq' &&
-            pagedItems.map((q) => {
+            pagedItems.map((q, index) => {
               const selected = state.mcqAnswers[q.id];
               const isCorrect = selected === q.answer;
               const showExplanation = state.mcqShowExplanation[q.id];
               return (
                 <section className="card" key={q.id}>
                   <div className="question-header">
-                    <span className="question-number">Soal {(currentPage - 1) * PAGE_SIZE + pagedItems.indexOf(q) + 1}</span>
-                    {selected && (
-                      <span className={`status-badge ${isCorrect ? 'correct' : 'wrong'}`}>
-                        {isCorrect ? '✓ Benar' : '✗ Salah'}
-                      </span>
-                    )}
+                    <span className="question-number">Soal {(currentPage - 1) * PAGE_SIZE + index + 1}</span>
+                    <div className="question-actions-inline">
+                      <button className={state.favorites[q.id] ? 'ghost small starred' : 'ghost small'} onClick={() => toggleFavorite(q.id)}>
+                        {state.favorites[q.id] ? '★ Favorit' : '☆ Favorit'}
+                      </button>
+                      {selected && (
+                        <span className={`status-badge ${isCorrect ? 'correct' : 'wrong'}`}>
+                          {isCorrect ? '✓ Benar' : '✗ Salah'}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <h3>{q.prompt}</h3>
                   <div className="stack">
                     {q.options.map((option) => (
-                      <label 
-                        key={option} 
+                      <label
+                        key={option}
                         className={`option ${selected ? (option === q.answer ? 'correct-answer' : (option === selected && option !== q.answer ? 'wrong-answer' : '')) : ''}`}
                       >
                         <input
@@ -708,12 +859,17 @@ function App() {
                       <p className={isCorrect ? 'ok' : 'wrong'}>
                         {isCorrect ? 'Jawaban benar! ✅' : `Jawabanmu: "${selected}" — Belum tepat. Jawaban benar: "${q.answer}"`}
                       </p>
-                      <button 
-                        className="ghost small"
-                        onClick={() => toggleExplanation(q.id)}
-                      >
-                        {showExplanation ? 'Sembunyikan penjelasan' : 'Lihat penjelasan'}
-                      </button>
+                      <div className="inline-actions-wrap">
+                        <button
+                          className="ghost small"
+                          onClick={() => toggleExplanation(q.id)}
+                        >
+                          {showExplanation ? 'Sembunyikan penjelasan' : 'Lihat penjelasan'}
+                        </button>
+                        <button className="ghost small" onClick={() => clearMcqAnswer(q.id)}>
+                          ↺ Ulangi soal ini
+                        </button>
+                      </div>
                       {showExplanation && q.explanation && (
                         <div className="explanation-box">
                           <strong>💡 Penjelasan:</strong>
@@ -727,18 +883,23 @@ function App() {
             })}
 
           {state.selectedType === 'essay' &&
-            pagedItems.map((q) => {
+            pagedItems.map((q, index) => {
               const wordCount = (state.essayAnswers[q.id] || '').trim().split(/\s+/).filter(Boolean).length;
               const charCount = (state.essayAnswers[q.id] || '').length;
               return (
                 <section className="card" key={q.id}>
                   <div className="question-header">
-                    <span className="question-number">Soal {(currentPage - 1) * PAGE_SIZE + pagedItems.indexOf(q) + 1}</span>
-                    {wordCount > 0 && (
-                      <span className="status-badge answered">
-                        {wordCount} kata
-                      </span>
-                    )}
+                    <span className="question-number">Soal {(currentPage - 1) * PAGE_SIZE + index + 1}</span>
+                    <div className="question-actions-inline">
+                      <button className={state.favorites[q.id] ? 'ghost small starred' : 'ghost small'} onClick={() => toggleFavorite(q.id)}>
+                        {state.favorites[q.id] ? '★ Favorit' : '☆ Favorit'}
+                      </button>
+                      {wordCount > 0 && (
+                        <span className="status-badge answered">
+                          {wordCount} kata
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <h3>{q.prompt}</h3>
                   {q.hint && (
@@ -756,6 +917,24 @@ function App() {
                       })
                     }
                   />
+                  <div className="inline-actions-wrap top-space">
+                    <button className="ghost small" onClick={() => clearEssayAnswer(q.id)}>
+                      🧹 Bersihkan jawaban
+                    </button>
+                    <button
+                      className="ghost small"
+                      onClick={() =>
+                        updateState({
+                          essayAnswers: {
+                            ...state.essayAnswers,
+                            [q.id]: `${state.essayAnswers[q.id] ? `${state.essayAnswers[q.id]}\n\n` : ''}Kerangka jawaban:\n1. Ide utama\n2. Argumen/analisis\n3. Contoh atau data pendukung\n4. Kesimpulan`,
+                          },
+                        })
+                      }
+                    >
+                      🧩 Sisipkan kerangka jawaban
+                    </button>
+                  </div>
                   <p className="subtle-info">
                     {wordCount} kata • {charCount} karakter
                     {wordCount < 10 && wordCount > 0 && ' (tambahkan lebih banyak untuk jawaban yang lengkap)'}
@@ -765,14 +944,19 @@ function App() {
             })}
 
           {state.selectedType === 'flashcards' &&
-            pagedItems.map((card) => {
+            pagedItems.map((card, index) => {
               const flipped = !!state.flashcardFlips[card.id];
               const mastered = !!state.masteredFlashcards[card.id];
               return (
                 <section key={card.id} className={`card flashcard-wrapper ${mastered ? 'mastered-card' : ''}`}>
                   <div className="question-header">
-                    <span className="question-number">Kartu {(currentPage - 1) * PAGE_SIZE + pagedItems.indexOf(card) + 1}</span>
-                    {mastered && <span className="status-badge mastered">✓ Dikuasai</span>}
+                    <span className="question-number">Kartu {(currentPage - 1) * PAGE_SIZE + index + 1}</span>
+                    <div className="question-actions-inline">
+                      <button className={state.favorites[card.id] ? 'ghost small starred' : 'ghost small'} onClick={() => toggleFavorite(card.id)}>
+                        {state.favorites[card.id] ? '★ Favorit' : '☆ Favorit'}
+                      </button>
+                      {mastered && <span className="status-badge mastered">✓ Dikuasai</span>}
+                    </div>
                   </div>
                   <button
                     className={flipped ? 'flashcard flipped' : 'flashcard'}
@@ -802,6 +986,9 @@ function App() {
                       }
                     >
                       {mastered ? '✓ Sudah dikuasai' : '✓ Tandai dikuasai'}
+                    </button>
+                    <button className="ghost" onClick={() => markFlashcardReview(card.id)}>
+                      🔁 Tandai review ulang
                     </button>
                     <button
                       className="ghost"
@@ -871,6 +1058,7 @@ function App() {
                   <li><strong>← / →</strong> → pindah halaman</li>
                   <li><strong>1 / 2 / 3</strong> → pindah tipe (MCQ/Essai/Flashcard)</li>
                   <li><strong>R</strong> → lompat ke soal acak</li>
+                  <li><strong>B</strong> → aktif/nonaktif filter favorit</li>
                   <li><strong>?</strong> → buka bantuan ini</li>
                   <li><strong>Esc</strong> → tutup bantuan</li>
                 </ul>

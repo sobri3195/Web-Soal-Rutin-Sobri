@@ -254,3 +254,73 @@ input::placeholder, textarea::placeholder { color: #64748b; }
   .back-to-top { right: 16px; bottom: 16px; }
   .flashcard-actions .ghost, .sidebar-footer .ghost { width: 100%; text-align: center; }
 }
+
+
+.insight-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.compact-grid { margin-top: -2px; }
+.progress-fill.warm { background: linear-gradient(90deg, #f59e0b, #f97316); }
+.bookmark-toggle { padding: 10px 12px; border-radius: 10px; background: var(--surface); }
+.question-map-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.question-map {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.question-chip {
+  min-width: 48px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-main);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.question-chip:hover { transform: translateY(-1px); background: var(--surface-hover); }
+.question-chip.active { box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.35); }
+.question-chip.correct, .question-chip.mastered { background: rgba(34, 197, 94, 0.15); border-color: rgba(34, 197, 94, 0.35); }
+.question-chip.wrong { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.35); }
+.question-chip.answered, .question-chip.reviewing { background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.35); }
+.question-chip small { font-size: 0.7rem; color: #fbbf24; }
+.question-actions-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.inline-actions-wrap {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.inline-actions-wrap.top-space { margin-top: 12px; }
+.ghost.starred {
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+}
+
+@media (max-width: 1024px) {
+  .insight-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .question-map { gap: 6px; }
+  .question-chip { min-width: 42px; padding: 9px 10px; }
+}
