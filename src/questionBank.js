@@ -6,7 +6,9 @@ export const moduleConfigs = [
   },
   { name: 'Matematika LPDP', tag: 'Reasoning Numerik', questionCount: 200 },
   { name: 'Tes Substansi LPDP', tag: 'Kebijakan & Kepemimpinan', questionCount: 150 },
+  { name: 'Tes Substansi LPDP (Varian Strategis)', tag: 'Kebijakan Publik & Eksekusi Program', questionCount: 150 },
   { name: 'Tes Potensi Akademik', tag: 'Verbal, Numerik & Logika • Hard mode', questionCount: 200 },
+  { name: 'Tes Potensi Akademik (Varian Intensif)', tag: 'Verbal, Numerik & Logika • Hard mode campuran', questionCount: 200 },
   { name: 'Soal Onkologi Radiasi', tag: 'Konsep Medis', questionCount: 200 },
   { name: 'Soal Toefl', tag: 'English Mastery', questionCount: 200 },
   { name: 'UKMPPD', tag: 'Semua Stase Kedokteran', questionCount: 150 },
@@ -53,6 +55,32 @@ export const moduleResearchNotes = {
       {
         label: 'Siapkerja Kemnaker — SKBT BUMN 2024 (komponen verbal, numerik, logika, analitik)',
         url: 'https://siapkerja.kemnaker.go.id/uploads/pengumuman/SKBT_BUMN.pdf',
+      },
+    ],
+  },
+  'Tes Substansi LPDP (Varian Strategis)': {
+    summary: 'Varian strategis ini menjaga standar sulit LPDP sekaligus menambah porsi soal yang menuntut ketegasan prioritas kebijakan, tata kelola implementasi, dan keberlanjutan pascaprogram.',
+    priorities: [
+      'Fokus pada reasoning kebijakan: penetapan prioritas, tata kelola risiko, dan adaptasi saat constraint berubah.',
+      'Mempertegas dimensi kepemimpinan: integritas, kolaborasi lintas aktor, serta akuntabilitas berbasis indikator.',
+    ],
+    sources: [
+      {
+        label: 'LPDP — Beasiswa Targeted Program (ruang kontribusi strategis nasional)',
+        url: 'https://lpdp.kemenkeu.go.id/beasiswa/targeted-program/',
+      },
+    ],
+  },
+  'Tes Potensi Akademik (Varian Intensif)': {
+    summary: 'Varian intensif mempertahankan domain utama verbal–numerik–logika, tetapi memberi kombinasi pola yang lebih berlapis agar latihan lebih beragam dan tidak mudah ditebak.',
+    priorities: [
+      'Menguatkan soal inferensi, asumsi, dan evaluasi argumen dengan distraktor yang sangat dekat.',
+      'Memperbanyak komposisi numerik multiaturan serta logika kendala (constraint) untuk simulasi tekanan waktu.',
+    ],
+    sources: [
+      {
+        label: 'Pusat Asesmen Pendidikan — Juknis Asesmen Bakat dan Minat 2023',
+        url: 'https://pusmendik.kemdikbud.go.id/abm2023/files/Juknis_Pelayanan_ABM_2023.pdf',
       },
     ],
   },
@@ -2270,8 +2298,10 @@ const createMcqQuestion = (moduleName, index) => {
     case 'Matematika LPDP':
       return createAdvancedLpdpMathQuestion(moduleName, index);
     case 'Tes Substansi LPDP':
+    case 'Tes Substansi LPDP (Varian Strategis)':
       return createAdvancedLpdpSubstanceQuestion(moduleName, index);
     case 'Tes Potensi Akademik':
+    case 'Tes Potensi Akademik (Varian Intensif)':
     case 'TPA Bappenas':
     case 'TPA Simak UI Paskasarjana':
       return createAdvancedTpaQuestion(moduleName, index);
@@ -2310,7 +2340,17 @@ const essayBlueprints = {
     lenses: lpdpAngles,
     scenarios: ['sertakan indikator hasil', 'jelaskan trade-off kebijakan', 'masukkan strategi kolaborasi', 'tuliskan peta implementasi 12 bulan'],
   },
+  'Tes Substansi LPDP (Varian Strategis)': {
+    themes: lpdpThemes,
+    lenses: lpdpAngles,
+    scenarios: ['sertakan indikator hasil', 'jelaskan trade-off kebijakan', 'masukkan strategi kolaborasi', 'tuliskan peta implementasi 12 bulan'],
+  },
   'Tes Potensi Akademik': {
+    themes: ['validitas argumen', 'inferensi teks akademik', 'analogi konseptual', 'fallacy dalam debat publik', 'deret multiaturan', 'strategi eliminasi opsi', 'data sufficiency', 'himpunan dan irisan', 'perbandingan kuantitatif', 'ordering constraint'],
+    lenses: ['dari sisi kecepatan', 'dari sisi akurasi', 'dari sisi metakognisi', 'dari sisi jebakan soal', 'dari sisi evaluasi asumsi', 'dari sisi review kesalahan'],
+    scenarios: ['sertakan contoh orisinal', 'urai langkah bernalar', 'bandingkan dengan pendekatan keliru umum', 'buat checklist singkat sebelum memilih jawaban'],
+  },
+  'Tes Potensi Akademik (Varian Intensif)': {
     themes: ['validitas argumen', 'inferensi teks akademik', 'analogi konseptual', 'fallacy dalam debat publik', 'deret multiaturan', 'strategi eliminasi opsi', 'data sufficiency', 'himpunan dan irisan', 'perbandingan kuantitatif', 'ordering constraint'],
     lenses: ['dari sisi kecepatan', 'dari sisi akurasi', 'dari sisi metakognisi', 'dari sisi jebakan soal', 'dari sisi evaluasi asumsi', 'dari sisi review kesalahan'],
     scenarios: ['sertakan contoh orisinal', 'urai langkah bernalar', 'bandingkan dengan pendekatan keliru umum', 'buat checklist singkat sebelum memilih jawaban'],
@@ -2361,7 +2401,9 @@ const essayHints = {
   'Matematika Simak UI': ['Cari invariant atau bentuk ekuivalen.', 'Tunjukkan alasan setiap transformasi aljabar.', 'Pisahkan strategi utama dan pengecekan akhir.'],
   'Matematika LPDP': ['Nyatakan asumsi numerik sebelum menghitung.', 'Bedakan hasil hitung dan interpretasi kebijakan.', 'Uji sensitivitas jika variabel kunci berubah.'],
   'Tes Substansi LPDP': ['Gunakan struktur masalah → strategi → indikator → risiko.', 'Hubungkan kontribusi dengan prioritas nasional.', 'Tunjukkan trade-off dan keputusan prioritas.'],
+  'Tes Substansi LPDP (Varian Strategis)': ['Gunakan struktur masalah → strategi → indikator → risiko.', 'Hubungkan kontribusi dengan prioritas nasional.', 'Tunjukkan trade-off dan keputusan prioritas.'],
   'Tes Potensi Akademik': ['Pisahkan premis eksplisit dan implisit.', 'Jelaskan mengapa distraktor tampak meyakinkan.', 'Tulis langkah bernalar, bukan hanya hasil.'],
+  'Tes Potensi Akademik (Varian Intensif)': ['Pisahkan premis eksplisit dan implisit.', 'Jelaskan mengapa distraktor tampak meyakinkan.', 'Tulis langkah bernalar, bukan hanya hasil.'],
   'Soal Onkologi Radiasi': ['Masukkan tujuan biologis dan konsekuensi klinis.', 'Bandingkan manfaat dan toksisitas.', 'Gunakan istilah teknis secara presisi.'],
   'Soal Toefl': ['Berikan contoh akademik, bukan percakapan kasual.', 'Soroti jebakan grammar atau inference.', 'Bandingkan opsi tepat dan hampir tepat.'],
   UKMPPD: ['Utamakan keselamatan pasien dan waktu kritis.', 'Sebutkan red flag, diagnosis kerja, lalu tindakan.', 'Bedakan stabilisasi dari terapi definitif.'],
@@ -2392,6 +2434,8 @@ const flashcardBlueprints = {
   'Matematika LPDP': ['present value', 'future value', 'BEP', 'persentase bertingkat', 'rasio majemuk', 'probabilitas keputusan'],
   'Tes Substansi LPDP': ['theory of change', 'stakeholder mapping', 'SMART metric', 'risk register', 'impact pathway', 'exit strategy'],
   'Tes Potensi Akademik': ['premis', 'inferensi', 'analogi', 'fallacy', 'eliminasi opsi', 'pola campuran', 'data sufficiency', 'rasio tabel', 'asumsi', 'constraint'],
+  'Tes Substansi LPDP (Varian Strategis)': ['theory of change', 'stakeholder mapping', 'SMART metric', 'risk register', 'impact pathway', 'exit strategy'],
+  'Tes Potensi Akademik (Varian Intensif)': ['premis', 'inferensi', 'analogi', 'fallacy', 'eliminasi opsi', 'pola campuran', 'data sufficiency', 'rasio tabel', 'asumsi', 'constraint'],
   'Soal Onkologi Radiasi': ['4R radiobiologi', 'CTV/PTV', 'IMRT', 'LET', 'OER', 'toxicity grading'],
   'Soal Toefl': ['subjunctive', 'inversion', 'rhetorical purpose', 'inference', 'collocation', 'hedging'],
   UKMPPD: ['triase', 'red flag', 'reperfusi', 'rehidrasi', 'MgSO4', 'door-to-CT'],
