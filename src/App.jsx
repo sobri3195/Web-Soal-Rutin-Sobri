@@ -8,11 +8,21 @@ import {
   PAGE_SIZE,
   questionBank,
 } from './questionBank';
+import {
+  MAX_IMPORT_FILE_SIZE,
+  isValidImportFile,
+  sanitizeImportedState,
+} from './utils/stateUtils';
+import {
+  buildModuleCompletionMap,
+  getMcqStats,
+  getReadinessScore,
+  getTypeSummary,
+} from './utils/progressUtils';
 
 const STORAGE_KEY = 'sobri-practice-state-v4';
 const VALID_TYPES = ['mcq', 'essay', 'flashcards'];
 const VALID_MCQ_FILTERS = ['all', 'unanswered', 'correct', 'wrong'];
-const asRecord = (value) => (value && typeof value === 'object' && !Array.isArray(value) ? value : {});
 
 const initialState = {
   selectedModule: modules[0],
@@ -40,49 +50,18 @@ function App() {
   const searchInputRef = useRef(null);
   const contentRef = useRef(null);
 
-  const sanitizeImportedState = (snapshot = {}) => {
-    const safe = { ...initialState };
-
-    if (typeof snapshot.selectedModule === 'string' && modules.includes(snapshot.selectedModule)) {
-      safe.selectedModule = snapshot.selectedModule;
-    }
-    if (typeof snapshot.selectedType === 'string' && VALID_TYPES.includes(snapshot.selectedType)) {
-      safe.selectedType = snapshot.selectedType;
-    }
-    safe.mcqAnswers = asRecord(snapshot.mcqAnswers);
-    safe.mcqShowExplanation = asRecord(snapshot.mcqShowExplanation);
-    safe.essayAnswers = asRecord(snapshot.essayAnswers);
-    safe.flashcardFlips = asRecord(snapshot.flashcardFlips);
-    safe.masteredFlashcards = asRecord(snapshot.masteredFlashcards);
-    safe.favorites = asRecord(snapshot.favorites);
-    if (typeof snapshot.query === 'string') {
-      safe.query = snapshot.query;
-    }
-    if (typeof snapshot.page === 'number' && Number.isFinite(snapshot.page) && snapshot.page > 0) {
-      safe.page = Math.floor(snapshot.page);
-    }
-    if (typeof snapshot.mcqFilter === 'string' && VALID_MCQ_FILTERS.includes(snapshot.mcqFilter)) {
-      safe.mcqFilter = snapshot.mcqFilter;
-    }
-    if (typeof snapshot.showMasteredFlashcards === 'boolean') {
-      safe.showMasteredFlashcards = snapshot.showMasteredFlashcards;
-    }
-    if (typeof snapshot.showBookmarkedOnly === 'boolean') {
-      safe.showBookmarkedOnly = snapshot.showBookmarkedOnly;
-    }
-    if (typeof snapshot.darkMode === 'boolean') {
-      safe.darkMode = snapshot.darkMode;
-    }
-
-    return safe;
-  };
-
   useEffect(() => {
     const savedState = localStorage.getItem(STORAGE_KEY);
     if (!savedState) return;
     try {
       const parsed = JSON.parse(savedState);
-      const safeParsed = sanitizeImportedState(parsed);
+      const safeParsed = sanitizeImportedState({
+        snapshot: parsed,
+        initialState,
+        modules,
+        validTypes: VALID_TYPES,
+        validMcqFilters: VALID_MCQ_FILTERS,
+      });
       setState(safeParsed);
     } catch {
       setState(initialState);
@@ -158,52 +137,34 @@ function App() {
   const currentPage = Math.min(state.page, totalPages);
   const pagedItems = displayItems.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
-  const answeredCount = moduleMcq.filter((q) => state.mcqAnswers[q.id]).length;
-  const correctCount = moduleMcq.filter((q) => state.mcqAnswers[q.id] === q.answer).length;
-  const progressPercent = moduleMcq.length > 0 ? Math.round((answeredCount / moduleMcq.length) * 100) : 0;
+  const { answeredCount, correctCount, progressPercent, accuracyRate, remainingMcqCount } = getMcqStats(
+    moduleMcq,
+    state.mcqAnswers,
+  );
   const essayAnsweredCount = moduleEssay.filter((q) => (state.essayAnswers[q.id] || '').trim()).length;
   const masteredFlashcardsCount = moduleFlashcards.filter((q) => state.masteredFlashcards[q.id]).length;
 
-  const accuracyRate = answeredCount > 0 ? Math.round((correctCount / answeredCount) * 100) : 0;
-  const remainingMcqCount = moduleMcq.length - answeredCount;
   const filteredSummary = displayItems.length === filteredItems.length
     ? `${displayItems.length} item tampil`
     : `${displayItems.length} dari ${filteredItems.length} item tampil`;
   const canResetView = state.page > 1 || !!state.query || state.mcqFilter !== 'all' || !state.showMasteredFlashcards || state.showBookmarkedOnly;
 
-  const typeSummary =
-    state.selectedType === 'mcq'
-      ? {
-          title: 'Progress MCQ',
-          done: answeredCount,
-          total: moduleMcq.length,
-          helper: `${correctCount} jawaban benar • ${remainingMcqCount} belum dijawab`,
-        }
-      : state.selectedType === 'essay'
-        ? {
-            title: 'Progress Essai',
-            done: essayAnsweredCount,
-            total: moduleEssay.length,
-            helper: `${moduleEssay.length - essayAnsweredCount} essai belum terisi`,
-          }
-        : {
-            title: 'Progress Flashcard',
-            done: masteredFlashcardsCount,
-            total: moduleFlashcards.length,
-            helper: `${moduleFlashcards.length - masteredFlashcardsCount} kartu belum dikuasai`,
-          };
+  const typeSummary = getTypeSummary({
+    selectedType: state.selectedType,
+    answeredCount,
+    correctCount,
+    remainingMcqCount,
+    moduleMcqLength: moduleMcq.length,
+    essayAnsweredCount,
+    moduleEssayLength: moduleEssay.length,
+    masteredFlashcardsCount,
+    moduleFlashcardsLength: moduleFlashcards.length,
+  });
   const typeProgressPercent = typeSummary.total > 0 ? Math.round((typeSummary.done / typeSummary.total) * 100) : 0;
-  const readinessScore = Math.round(((accuracyRate * 0.45) + (progressPercent * 0.35) + ((typeProgressPercent || 0) * 0.2)) || 0);
+  const readinessScore = getReadinessScore({ accuracyRate, progressPercent, typeProgressPercent });
 
   const moduleCompletionMap = useMemo(() => {
-    return moduleConfigs.reduce((acc, module) => {
-      const moduleQuestions = moduleQuestionMap[module.name]?.mcq || [];
-      const moduleAnswered = moduleQuestions.filter((item) => state.mcqAnswers[item.id]).length;
-      acc[module.name] = moduleQuestions.length
-        ? Math.round((moduleAnswered / moduleQuestions.length) * 100)
-        : 0;
-      return acc;
-    }, {});
+    return buildModuleCompletionMap(moduleConfigs, moduleQuestionMap, state.mcqAnswers);
   }, [state.mcqAnswers]);
 
   const overallFavorites = Object.values(state.favorites).filter(Boolean).length;
@@ -531,6 +492,10 @@ function App() {
   const importProgress = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    if (!isValidImportFile(file)) {
+      setToast(`File import harus JSON dan maksimal ${Math.round(MAX_IMPORT_FILE_SIZE / 1024)}KB.`);
+      return;
+    }
 
     try {
       const text = await file.text();
@@ -539,7 +504,13 @@ function App() {
         throw new Error('Invalid file format');
       }
 
-      const safeData = sanitizeImportedState(parsed.stateSnapshot);
+      const safeData = sanitizeImportedState({
+        snapshot: parsed.stateSnapshot,
+        initialState,
+        modules,
+        validTypes: VALID_TYPES,
+        validMcqFilters: VALID_MCQ_FILTERS,
+      });
 
       setState((prev) => ({ ...prev, ...safeData }));
       setToast('Progress berhasil di-import.');
