@@ -1088,15 +1088,22 @@ const tpaCodingPairs = [
 const createAdvancedTpaQuestion = (moduleName, index) => {
   const n = index + 1;
   const seed = seeded(moduleName, index);
-  const topic = index % 20;
-  const cycle = Math.floor(index / 20);
+  const isBappenasTrack = moduleName === 'TPA Bappenas';
+  const isSimakPascaTrack = moduleName === 'TPA Simak UI Paskasarjana';
+  const topic = isSimakPascaTrack ? (index + 7) % 20 : index % 20;
+  const cycle = Math.floor(index / 20) + (isSimakPascaTrack ? 2 : 0);
+  const examLabel = isBappenasTrack
+    ? 'TPA Bappenas'
+    : isSimakPascaTrack
+      ? 'TPA SIMAK UI Pascasarjana'
+      : 'Tes Potensi Akademik';
 
   const variants = [
     () => {
       const [a, b, c, d] = tpaRelations[index % tpaRelations.length];
       const extra = pick(['instrumen inti', 'produk kerja utama', 'alat representasi utama', 'hasil analisis khas'], seed);
       return {
-        prompt: `[Sulit • Analogi Profesi] ${a} : ${b} = ${c} : ... (fokus pada ${extra})`,
+        prompt: `[${examLabel} • Sulit • Analogi Profesi] ${a} : ${b} = ${c} : ... (fokus pada ${extra})`,
         answer: d,
         explanation: `Hubungan yang dipakai adalah pelaku dengan ${extra} yang paling melekat pada perannya.`,
         options: shuffleDeterministic([d, a, b, 'verifikasi'], seed),
@@ -1111,7 +1118,7 @@ const createAdvancedTpaQuestion = (moduleName, index) => {
       ];
       const [a, b, c, d] = pairs[(cycle + index) % pairs.length];
       return {
-        prompt: `[Sulit • Analogi Konseptual] ${a} : ${b} = ${c} : ...`,
+        prompt: `[${examLabel} • Sulit • Analogi Konseptual] ${a} : ${b} = ${c} : ...`,
         answer: d,
         explanation: `${b} merupakan proses/kriteria utama yang melekat pada ${a}; pola yang sama dipakai untuk ${c}.`,
         options: shuffleDeterministic([d, a, b, 'interpretasi'], seed),
@@ -1137,7 +1144,7 @@ const createAdvancedTpaQuestion = (moduleName, index) => {
       ];
       const item = groups[(cycle + seed) % groups.length];
       return {
-        prompt: `[Sulit • Klasifikasi Verbal] Manakah yang tidak sekelompok: ${item.words.join(', ')}?`,
+        prompt: `[${examLabel} • Sulit • Klasifikasi Verbal] Manakah yang tidak sekelompok: ${item.words.join(', ')}?`,
         answer: item.answer,
         explanation: `${item.answer} berbeda karena ${item.reason}.`,
         options: shuffleDeterministic(item.words, seed),
@@ -1156,7 +1163,7 @@ const createAdvancedTpaQuestion = (moduleName, index) => {
         tendensius: ['bias', 'sepihak'],
       };
       return {
-        prompt: `[Sulit • Antonim Akademik] Lawan kata yang paling tepat untuk "${word}" adalah...`,
+        prompt: `[${examLabel} • Sulit • Antonim Akademik] Lawan kata yang paling tepat untuk "${word}" adalah...`,
         answer: opposite,
         explanation: `Yang dicari adalah antonim akademik paling presisi untuk ${word}.`,
         options: shuffleDeterministic([opposite, ...near[opposite], word], seed),
@@ -1173,7 +1180,7 @@ const createAdvancedTpaQuestion = (moduleName, index) => {
       ];
       const [word, answer] = synonyms[(cycle + index) % synonyms.length];
       return {
-        prompt: `[Sulit • Sinonim Akademik] Makna yang paling dekat dengan kata "${word}" adalah...`,
+        prompt: `[${examLabel} • Sulit • Sinonim Akademik] Makna yang paling dekat dengan kata "${word}" adalah...`,
         answer,
         explanation: `Pada konteks akademik, ${word} paling dekat dengan ${answer}.`,
         options: shuffleDeterministic([answer, 'acak', 'dangkal', 'reaktif'], seed),
