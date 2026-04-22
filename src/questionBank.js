@@ -210,6 +210,49 @@ const buildUniqueOptions = (answer, pool, seed, count = 4) => {
   return shuffleDeterministic([answer, ...distractors.slice(0, count - 1)], seed + 97);
 };
 
+const polishText = (value) => String(value)
+  .replace(/\s+/g, ' ')
+  .replace(/\s([?!,.;:])/g, '$1')
+  .trim();
+
+const ensureOptionQuality = (answer, options, seed) => {
+  const normalizedAnswer = polishText(answer);
+  const normalizedOptions = (options || []).map((option) => polishText(option));
+  const uniqueOptions = [...new Set(normalizedOptions)];
+  const withAnswer = uniqueOptions.includes(normalizedAnswer)
+    ? uniqueOptions
+    : [normalizedAnswer, ...uniqueOptions];
+
+  const genericDistractors = [
+    'Tidak dapat disimpulkan dari informasi yang ada.',
+    'Semua opsi tampak benar pada pandangan pertama.',
+    'Pilihan ini mendekati benar tetapi mengabaikan syarat utama.',
+    'Tidak ada opsi lain yang sepenuhnya konsisten.',
+  ];
+
+  const numericAnswer = Number(normalizedAnswer);
+  const hasNumericAnswer = Number.isFinite(numericAnswer) && normalizedAnswer !== '';
+  const numericDistractors = hasNumericAnswer
+    ? [numericAnswer + 1, numericAnswer - 1, numericAnswer + 2, numericAnswer - 2].map((value) => String(value))
+    : [];
+
+  const fallbackPool = hasNumericAnswer ? numericDistractors : genericDistractors;
+  const completed = [...withAnswer];
+  fallbackPool.forEach((candidate) => {
+    if (completed.length < 4 && !completed.includes(candidate)) completed.push(candidate);
+  });
+
+  return shuffleDeterministic(completed.slice(0, 4), seed + 211);
+};
+
+const polishMcqQuestion = (question, seed) => ({
+  ...question,
+  prompt: polishText(question.prompt),
+  answer: polishText(question.answer),
+  explanation: polishText(question.explanation),
+  options: ensureOptionQuality(question.answer, question.options, seed),
+});
+
 const quantContexts = [
   'simulasi audit data seleksi',
   'pemodelan kapasitas ruang ujian',
@@ -2492,7 +2535,7 @@ const buildQuestionBank = () => {
 
   moduleConfigs.forEach((module) => {
     for (let i = 0; i < (module.questionCount || DEFAULT_QUESTION_COUNT_PER_MODULE); i += 1) {
-      mcq.push(createMcqQuestion(module.name, i));
+      mcq.push(polishMcqQuestion(createMcqQuestion(module.name, i), seeded(module.name, i, 99)));
       essay.push(createEssayQuestion(module.name, i));
       flashcards.push(createFlashcard(module.name, i));
     }
