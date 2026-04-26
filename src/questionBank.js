@@ -2,7 +2,7 @@ export const moduleConfigs = [
   {
     name: 'Matematika Simak UI',
     tag: 'Analitik Kuantitatif • Hard mode berbasis riset',
-    questionCount: 200,
+    questionCount: 250,
   },
   { name: 'Matematika LPDP', tag: 'Reasoning Numerik', questionCount: 200 },
   { name: 'Tes Substansi LPDP', tag: 'Kebijakan & Kepemimpinan', questionCount: 150 },
@@ -266,6 +266,43 @@ const quantContexts = [
 
 const countIntegersInInterval = (min, max) => Math.max(0, Math.floor(max) - Math.ceil(min) + 1);
 
+const parseTrigQuadrantSign = (quadrant) => {
+  const normalized = String(quadrant || '').trim().toUpperCase();
+  if (normalized === 'I') return { sin: 1, cos: 1, tan: 1 };
+  if (normalized === 'II') return { sin: 1, cos: -1, tan: -1 };
+  if (normalized === 'III') return { sin: -1, cos: -1, tan: 1 };
+  if (normalized === 'IV') return { sin: -1, cos: 1, tan: -1 };
+  throw new Error(`Kuadran tidak valid: ${quadrant}`);
+};
+
+export const getTrigValuesFromSin = (sinNumerator, sinDenominator, quadrant = 'I') => {
+  const absNum = Math.abs(Number(sinNumerator));
+  const absDen = Math.abs(Number(sinDenominator));
+  if (!Number.isFinite(absNum) || !Number.isFinite(absDen) || absDen === 0 || absNum >= absDen) {
+    throw new Error(`Nilai sin tidak valid: ${sinNumerator}/${sinDenominator}`);
+  }
+  const sign = parseTrigQuadrantSign(quadrant);
+  const cosNumeratorAbs = Math.sqrt((absDen ** 2) - (absNum ** 2));
+  const tanDenominatorAbs = cosNumeratorAbs;
+  const simplify = (num, den) => {
+    const roundedNum = Math.round(num);
+    const roundedDen = Math.round(den);
+    const divisor = gcd(Math.abs(roundedNum), Math.abs(roundedDen));
+    return { numerator: roundedNum / divisor, denominator: roundedDen / divisor };
+  };
+  const sinFraction = simplify(sign.sin * absNum, absDen);
+  const cosFraction = simplify(sign.cos * cosNumeratorAbs, absDen);
+  const tanFraction = simplify(sign.tan * absNum, tanDenominatorAbs);
+  return {
+    sin: sinFraction.numerator / sinFraction.denominator,
+    cos: cosFraction.numerator / cosFraction.denominator,
+    tan: tanFraction.numerator / tanFraction.denominator,
+    sinFraction,
+    cosFraction,
+    tanFraction,
+  };
+};
+
 const createAdvancedSimakMathQuestion = (moduleName, index) => {
   const n = index + 1;
   const topic = index % 20;
@@ -373,13 +410,38 @@ const createAdvancedSimakMathQuestion = (moduleName, index) => {
       };
     },
     () => {
-      const k = cycle + 2;
-      const answer = 2 * k;
+      const trig = getTrigValuesFromSin(3, 5, 'I');
+      const offset = cycle + 1;
+      const mode = cycle < 4 ? 0 : cycle % 4;
+      const formulaMap = [
+        {
+          expression: `5cos θ + ${offset}`,
+          answer: (5 * trig.cos) + offset,
+          explanation: `Karena sin θ = 3/5 dan θ berada di kuadran I, maka cos θ = 4/5. Jadi 5cos θ + ${offset} = 5(4/5) + ${offset} = 4 + ${offset} = ${4 + offset}.`,
+        },
+        {
+          expression: `5cos θ - ${offset}`,
+          answer: (5 * trig.cos) - offset,
+          explanation: `Karena sin θ = 3/5 dan θ berada di kuadran I, maka cos θ = 4/5. Jadi 5cos θ - ${offset} = 5(4/5) - ${offset} = 4 - ${offset} = ${4 - offset}.`,
+        },
+        {
+          expression: `10cos θ + ${offset}`,
+          answer: (10 * trig.cos) + offset,
+          explanation: `Karena sin θ = 3/5 dan θ berada di kuadran I, maka cos θ = 4/5. Jadi 10cos θ + ${offset} = 10(4/5) + ${offset} = 8 + ${offset} = ${8 + offset}.`,
+        },
+        {
+          expression: `5sin θ + ${offset}`,
+          answer: (5 * trig.sin) + offset,
+          explanation: `Karena sin θ = 3/5 dan θ berada di kuadran I, maka sin θ tetap 3/5. Jadi 5sin θ + ${offset} = 5(3/5) + ${offset} = 3 + ${offset} = ${3 + offset}.`,
+        },
+      ];
+      const selected = formulaMap[mode];
+      const answer = selected.answer;
       return {
-        prompt: `[Sulit • Trigonometri] Untuk ${context}, jika sin θ = 3/5 dan θ di kuadran I, maka nilai 5cos θ + ${cycle + 1} adalah...`,
+        prompt: `[Sulit • Trigonometri] Untuk ${context}, jika sin θ = 3/5 dan θ di kuadran I, maka nilai ${selected.expression} adalah...`,
         answer: String(answer),
-        explanation: `Karena sin θ=3/5, maka cos θ=4/5. Jadi 5cos θ + ${cycle + 1} = 4 + ${cycle + 1} = ${answer}.`,
-        options: buildNumericOptions(answer, [answer + 1, answer - 2, 5 + cycle], seed),
+        explanation: selected.explanation,
+        options: buildNumericOptions(answer, [answer + 1, answer - 2, answer + 3], seed),
       };
     },
     () => {
@@ -2528,6 +2590,55 @@ const validateUniqueness = (items, type) => {
   });
 };
 
+const inferTopicFromPrompt = (prompt) => {
+  const match = String(prompt).match(/\[(?:Sulit|Hard)\s*•\s*([^\]]+)\]/i);
+  return match ? polishText(match[1]) : 'Umum';
+};
+
+const enrichQuestionStructure = (question) => {
+  const topic = inferTopicFromPrompt(question.prompt);
+  const tags = [...new Set([
+    topic.toLowerCase().replace(/[^a-z0-9]+/gi, '-'),
+    question.module.toLowerCase().replace(/[^a-z0-9]+/gi, '-'),
+    'latihan-soal',
+  ])];
+  return {
+    ...question,
+    category: question.module,
+    difficulty: /(^\[hard|^\[sulit)/i.test(question.prompt) ? 'Sulit' : 'Menengah',
+    topic,
+    question: question.prompt,
+    correctAnswer: question.answer,
+    tags,
+  };
+};
+
+const validateMcqData = (items) => {
+  const ids = new Set();
+  items.forEach((item) => {
+    if (!item.id || ids.has(item.id)) {
+      throw new Error(`ID soal duplikat/kosong: ${item.id || '(kosong)'}`);
+    }
+    ids.add(item.id);
+    if (!Array.isArray(item.options) || item.options.length < 4) {
+      throw new Error(`Soal ${item.id} harus punya minimal 4 opsi.`);
+    }
+    const normalizedOptions = item.options.map((option) => polishText(option));
+    if (new Set(normalizedOptions).size !== normalizedOptions.length) {
+      throw new Error(`Soal ${item.id} memiliki opsi duplikat.`);
+    }
+    if (!item.answer || !polishText(item.answer)) {
+      throw new Error(`Soal ${item.id} tidak memiliki jawaban benar.`);
+    }
+    if (!normalizedOptions.includes(polishText(item.answer))) {
+      throw new Error(`Soal ${item.id} memiliki jawaban benar yang tidak ada di opsi.`);
+    }
+    if (!item.explanation || !polishText(item.explanation)) {
+      throw new Error(`Soal ${item.id} tidak memiliki pembahasan.`);
+    }
+  });
+};
+
 const buildQuestionBank = () => {
   const mcq = [];
   const essay = [];
@@ -2542,12 +2653,13 @@ const buildQuestionBank = () => {
   });
 
   const bank = {
-    mcq: ensureUniquePrompts(mcq, 'mcq'),
+    mcq: ensureUniquePrompts(mcq, 'mcq').map(enrichQuestionStructure),
     essay: ensureUniquePrompts(essay, 'essay'),
     flashcards: ensureUniquePrompts(flashcards, 'flashcards'),
   };
 
   validateUniqueness(bank.mcq, 'mcq');
+  validateMcqData(bank.mcq);
   validateUniqueness(bank.essay, 'essay');
   validateUniqueness(bank.flashcards, 'flashcards');
 
