@@ -38,6 +38,7 @@ const initialState = {
   mcqFilter: 'all',
   showMasteredFlashcards: true,
   showBookmarkedOnly: false,
+  shuffleSeed: Date.now(),
   darkMode: true,
 };
 
@@ -126,12 +127,24 @@ function App() {
     });
   }, [state.selectedModule, state.selectedType, state.query, state.mcqAnswers, state.mcqFilter, state.showBookmarkedOnly, state.favorites]);
 
+  const shuffledItems = useMemo(() => {
+    const list = [...filteredItems];
+    if (list.length <= 1) return list;
+    let seed = Math.abs(Number(state.shuffleSeed) || 1);
+    for (let i = list.length - 1; i > 0; i -= 1) {
+      seed = (seed * 1664525 + 1013904223) % 4294967296;
+      const j = seed % (i + 1);
+      [list[i], list[j]] = [list[j], list[i]];
+    }
+    return list;
+  }, [filteredItems, state.shuffleSeed]);
+
   const displayItems = useMemo(() => {
     if (state.selectedType !== 'flashcards' || state.showMasteredFlashcards) {
-      return filteredItems;
+      return shuffledItems;
     }
-    return filteredItems.filter((item) => !state.masteredFlashcards[item.id]);
-  }, [filteredItems, state.selectedType, state.showMasteredFlashcards, state.masteredFlashcards]);
+    return shuffledItems.filter((item) => !state.masteredFlashcards[item.id]);
+  }, [shuffledItems, state.selectedType, state.showMasteredFlashcards, state.masteredFlashcards]);
 
   const totalPages = Math.max(1, Math.ceil(displayItems.length / PAGE_SIZE));
   const currentPage = Math.min(state.page, totalPages);
@@ -184,6 +197,11 @@ function App() {
     if (!displayItems.length) return;
     const randomIndex = Math.floor(Math.random() * displayItems.length);
     updateState({ page: Math.floor(randomIndex / PAGE_SIZE) + 1 });
+  };
+
+  const reshuffleQuestions = () => {
+    updateState({ shuffleSeed: Date.now(), page: 1 });
+    setToast('Urutan soal diacak ulang.');
   };
 
   const jumpToItem = (itemId) => {
@@ -708,6 +726,7 @@ function App() {
               Hanya favorit
             </label>
             <button className="ghost" onClick={jumpToRandomQuestion}>🎲 Soal acak</button>
+            <button className="ghost" onClick={reshuffleQuestions}>🔀 Acak ulang urutan</button>
             {canResetView && (
               <button className="ghost" onClick={resetViewState}>🔄 Reset tampilan</button>
             )}
