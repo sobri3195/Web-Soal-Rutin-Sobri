@@ -228,6 +228,8 @@ const ensureOptionQuality = (answer, options, seed) => {
     'Semua opsi tampak benar pada pandangan pertama.',
     'Pilihan ini mendekati benar tetapi mengabaikan syarat utama.',
     'Tidak ada opsi lain yang sepenuhnya konsisten.',
+    'Kesimpulan ini benar hanya jika asumsi tambahan dipenuhi.',
+    'Terlihat tepat secara intuitif, tetapi gagal pada satu batasan kritis.',
   ];
 
   const numericAnswer = Number(normalizedAnswer);
@@ -238,11 +240,18 @@ const ensureOptionQuality = (answer, options, seed) => {
 
   const fallbackPool = hasNumericAnswer ? numericDistractors : genericDistractors;
   const completed = [...withAnswer];
+  const hardDistractorPool = hasNumericAnswer
+    ? [numericAnswer + 3, numericAnswer - 3].map((value) => String(value))
+    : genericDistractors;
+
+  hardDistractorPool.forEach((candidate) => {
+    if (completed.length < 5 && !completed.includes(candidate)) completed.push(candidate);
+  });
   fallbackPool.forEach((candidate) => {
-    if (completed.length < 4 && !completed.includes(candidate)) completed.push(candidate);
+    if (completed.length < 5 && !completed.includes(candidate)) completed.push(candidate);
   });
 
-  return shuffleDeterministic(completed.slice(0, 4), seed + 211);
+  return shuffleDeterministic(completed.slice(0, 5), seed + 211);
 };
 
 const polishMcqQuestion = (question, seed) => ({
@@ -2602,10 +2611,11 @@ const enrichQuestionStructure = (question) => {
     question.module.toLowerCase().replace(/[^a-z0-9]+/gi, '-'),
     'latihan-soal',
   ])];
+  const isHardPrompt = /(^\[hard|^\[sulit)/i.test(question.prompt);
   return {
     ...question,
     category: question.module,
-    difficulty: /(^\[hard|^\[sulit)/i.test(question.prompt) ? 'Sulit' : 'Menengah',
+    difficulty: isHardPrompt ? 'Sangat Sulit' : 'Sulit',
     topic,
     question: question.prompt,
     correctAnswer: question.answer,
