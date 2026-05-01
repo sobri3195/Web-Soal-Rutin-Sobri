@@ -2423,6 +2423,52 @@ const createAdvancedSpanishQuestion = (moduleName, index) => {
 
 
 
+
+const simakUiBahasaIndonesiaSet = [
+  {
+    prompt: '[SIMAK UI • Bahasa Indonesia] (No. 21) Pemakaian huruf kapital yang TIDAK BENAR berikut ini adalah ....',
+    options: ['bahasa Inggris', 'bangsa Inggris', 'kunci Inggris', 'Perdana Menteri Inggris', 'rakyat Inggris'],
+    answer: 'bahasa Inggris',
+    explanation: 'Nama bahasa harus diawali huruf kapital: seharusnya "Bahasa Inggris".',
+  },
+  {
+    prompt: '[SIMAK UI • Bahasa Indonesia] (No. 24) Penulisan gabungan kata di bawah ini benar semuanya, kecuali ....',
+    options: [
+      'tanggung jawab, kerjasama, tandatangan, terima kasih',
+      'semipermanen, mancanegara, pascasarjana, saptakrida',
+      'acap kali, adakalanya, barangkali, bagaimana',
+      'mata ajar, meja tulis, orang tua, simpang empat',
+      'kacamata, dukacita, sapu tangan, halalbihalal',
+    ],
+    answer: 'tanggung jawab, kerjasama, tandatangan, terima kasih',
+    explanation: 'Bentuk baku yang tepat antara lain "kerja sama" dan "tanda tangan", jadi baris ini tidak seluruhnya benar.',
+  },
+  {
+    prompt: '[SIMAK UI • Bahasa Indonesia] (No. 25) Bentuk baku untuk melengkapi kalimat: "Negara Indonesia mempunyai bahasa ..., yakni bahasa Indonesia. Bahasa Indonesia merupakan ... bangsa" adalah ....',
+    options: ['pemersatu, persatuan', 'persatuan, pemersatu', 'persatuan, persatuan', 'persatuan, mempersatukan', 'pemersatu, mempersatukan'],
+    answer: 'persatuan, pemersatu',
+    explanation: 'Ungkapan yang baku adalah "bahasa persatuan" dan "pemersatu bangsa".',
+  },
+  {
+    prompt: '[SIMAK UI • Bahasa Indonesia] (No. 26) Kalimat di bawah ini tidak efektif, kecuali ....',
+    options: [
+      'Dalam bab ini, akan menelusuri kasus malpraktik.',
+      'Berita musibah gempa itu saya sudah sampaikan pada Pak Lurah.',
+      'Bagi segenap pelajar yang akan mengajukan proposal penelitian harap mengirimkan datanya segera.',
+      'Beberapa artikel-artikel ilmiah itu dimuat dalam jurnal ilmiah.',
+      'Makalah ini membahas masalah kesehatan masyarakat di daerah rawan gempa.',
+    ],
+    answer: 'Makalah ini membahas masalah kesehatan masyarakat di daerah rawan gempa.',
+    explanation: 'Kalimat E memiliki subjek-predikat yang jelas dan tidak boros kata.',
+  },
+  {
+    prompt: '[SIMAK UI • Bahasa Indonesia] (No. 27) Inti kalimat: "Saat berlaga ... Taufik menyerah dua set langsung dari pemain tuan rumah." adalah ....',
+    options: ['Taufik berlaga di Yuan Shen Gymnasium of Pudong, Shanghai', 'kekalahan Taufik dari pemain tuan rumah', 'pemain tuan rumah menang atas Taufik', 'pertandingan antara Taufik dan pemain tuan rumah', 'Taufik menyerah dua set langsung'],
+    answer: 'Taufik menyerah dua set langsung',
+    explanation: 'Inti kalimat diambil dari subjek + predikat utama tanpa keterangan tambahan.',
+  },
+];
+
 const simakUiPascasarjanaQuestionBank = Array.from({ length: 100 }, (_, index) => {
   const n = index + 1;
   const type = index % 4;
@@ -2485,7 +2531,8 @@ const createMcqQuestion = (moduleName, index) => {
     case 'Tes Potensi Akademik (Varian Intensif)':
     case 'TPA Bappenas':
     case 'TPA Simak UI Paskasarjana': {
-      const bank = simakUiPascasarjanaQuestionBank[index % simakUiPascasarjanaQuestionBank.length];
+      const mergedBank = [...simakUiBahasaIndonesiaSet, ...simakUiPascasarjanaQuestionBank];
+      const bank = mergedBank[index % mergedBank.length];
       return {
         id: `mcq-${moduleName}-${index + 1}`,
         module: moduleName,
