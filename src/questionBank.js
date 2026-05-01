@@ -5,6 +5,7 @@ export const moduleConfigs = [
     questionCount: 250,
   },
   { name: 'Matematika LPDP', tag: 'Reasoning Numerik', questionCount: 200 },
+  { name: 'Soal Kode 911', tag: 'Input dari gambar pengguna', questionCount: 20 },
   { name: 'Tes Substansi LPDP', tag: 'Kebijakan & Kepemimpinan', questionCount: 150 },
   { name: 'Tes Substansi LPDP (Varian Strategis)', tag: 'Kebijakan Publik & Eksekusi Program', questionCount: 150 },
   { name: 'Tes Potensi Akademik', tag: 'Verbal, Numerik & Logika • Hard mode', questionCount: 200 },
@@ -39,6 +40,14 @@ export const moduleResearchNotes = {
         url: 'https://www.detik.com/edu/seleksi-masuk-pt/d-7947124/pendaftaran-simak-ui-2025-resmi-dibuka-melalui-enrollment-ui-ac-id-cek-biayanya',
       },
     ],
+  },
+  'Soal Kode 911': {
+    summary: 'Kumpulan soal yang diinput dari gambar pengguna (kode naskah 911) agar bisa dikerjakan langsung di website.',
+    priorities: [
+      'Memuat soal sesuai naskah gambar pengguna.',
+      'Menyediakan jawaban dan pembahasan ringkas per butir.',
+    ],
+    sources: [],
   },
   'Tes Potensi Akademik': {
     summary: 'Riset awal saya pakai untuk menggeser modul ini ke level sulit penuh: komposisi TPA paling sering bergerak pada verbal, kuantitatif/numerik, dan penalaran-logika; versi sulit lalu ditingkatkan lewat multi-step inference, distraktor dekat, dan data yang tidak bisa dijawab dengan hafalan satu langkah.',
@@ -2472,10 +2481,45 @@ const simakUiPascasarjanaQuestionBank = Array.from({ length: 100 }, (_, index) =
   };
 });
 
+
+const soalKode911Bank = [
+  { prompt: 'Nilai dari √(3+2√2) − √2 adalah ...', options: ['4√2','3+√2','√2','1'], answer: '1', explanation: 'Karena √(3+2√2)=√2+1, maka hasilnya 1.' },
+  { prompt: 'Model matematika yang tepat: tipe A butuh 4 jam mesin I dan 2 jam mesin II, tipe B butuh 5 jam mesin I dan 3 jam mesin II, tiap mesin maksimal 15 jam/hari.', options: ['4x+2y≤15 dan 5x+3y≤15','4x+5y≤15 dan 2x+3y≤15','3x+2y≤15 dan 5x+3y≤15','4x+2y≤15 dan 3x+3y≤15'], answer: '4x+5y≤15 dan 2x+3y≤15', explanation: 'Kendala jam mesin I dan II langsung diterjemahkan ke pertidaksamaan.' },
+  { prompt: 'Dari angka 2,4,6,8,9 dibuat bilangan 3 angka berbeda. Banyaknya bilangan <500 adalah ...', options: ['32','24','16','12'], answer: '24', explanation: 'Ratusan hanya 2/4 (2 cara), lalu 4×3 cara untuk dua posisi lain: 24.' },
+  { prompt: 'Akar-akar 2x^2-ax-2=0 adalah x1,x2. Jika x1^2−2x1x2+x2^2=−2a, maka a=...', options: ['-8','-4','0','4'], answer: '-4', explanation: 'Gunakan (x1−x2)^2=(x1+x2)^2−4x1x2 lalu substitusi Vieta.' },
+  { prompt: 'Jika x1 dan x2 akar dari 5^(x+1)+5^(2−x)=126, maka x1+x2 = ...', options: ['26/5','5','1','-1'], answer: '1', explanation: 'Substitusi t=5^x memberi kuadrat dengan akar t=25 dan t=1/5, jadi x=2 dan -1.' },
+  { prompt: 'Untuk pertidaksamaan 3/(x^2−3x+2) < 5/(x^2−4x+3), himpunan solusi yang benar adalah ...', options: ['x>1/2','x>2','x>3','2<x<3'], answer: 'x>3', explanation: 'Hasil aljabar memberi (x−2)(x−3)>0; dari opsi yang tersedia yang cocok adalah x>3.' },
+  { prompt: 'Urutan alfabet dari huruf S,I,M,A,K. Posisi kata "SIMAK" adalah ...', options: ['105','106','107','116'], answer: '107', explanation: 'Hitung banyak permutasi yang mendahului SIMAK secara leksikografis.' },
+  { prompt: 'Pada segitiga siku-siku sama kaki ABC (siku di B), BD ditarik ke AC dengan AD=DC. Jika luas ABC = 2p^2, maka BD=...', options: ['p/2','(p√2)/2','p√2','2p'], answer: 'p√2', explanation: 'Dari luas dapat kaki s=2p dan tinggi ke hipotenusa menjadi p√2.' },
+  { prompt: 'Jika f(x+1)=2x dan (f∘g)(x+1)=2x^2+4x−2, maka g(x)=...', options: ['x^2−1','x^2−2','x^2+2x','x^2+2x−2'], answer: 'x^2−1', explanation: 'Dari f(t)=2t−2, maka 2g(x+1)−2=2x^2+4x−2 sehingga g(x)=x^2−1.' },
+  { prompt: 'Jumlah 1/(1+√2)+1/(√2+√3)+...+1/(√63+√64) = ...', options: ['10','9','8','7'], answer: '7', explanation: 'Deret menelescop setelah rasionalisasi: Σ(√(k+1)−√k)=8−1=7.' },
+  { prompt: 'Soal nomor 10 (teks kurang terbaca pada gambar).', options: ['Perlu gambar lebih jelas','A','B','C'], answer: 'Perlu gambar lebih jelas', explanation: 'Teks/angka pada gambar tidak cukup jelas untuk validasi pasti.' },
+  { prompt: 'Soal nomor 12 (teks kurang terbaca pada gambar).', options: ['Perlu gambar lebih jelas','A','B','C'], answer: 'Perlu gambar lebih jelas', explanation: 'Teks/angka pada gambar tidak cukup jelas untuk validasi pasti.' },
+  { prompt: 'Soal nomor 15 (teks kurang terbaca pada gambar).', options: ['Perlu gambar lebih jelas','A','B','C'], answer: 'Perlu gambar lebih jelas', explanation: 'Teks/angka pada gambar tidak cukup jelas untuk validasi pasti.' },
+  { prompt: 'Soal nomor 19 (teks kurang terbaca pada gambar).', options: ['Perlu gambar lebih jelas','A','B','C'], answer: 'Perlu gambar lebih jelas', explanation: 'Teks/angka pada gambar tidak cukup jelas untuk validasi pasti.' },
+  { prompt: 'Soal nomor 20 (teks kurang terbaca pada gambar).', options: ['Perlu gambar lebih jelas','A','B','C'], answer: 'Perlu gambar lebih jelas', explanation: 'Teks/angka pada gambar tidak cukup jelas untuk validasi pasti.' },
+  { prompt: 'Transformasi data: rata-rata awal 15, jangkauan 6. Setelah setiap data diubah jadi (x−A)/B, rata-rata 7 dan jangkauan 3. Nilai (A,B)=...', options: ['(3,2)','(2,3)','(1,2)','(2,1)'], answer: '(1,2)', explanation: 'Dari jangkauan: |B|=2. Dari rata-rata: (15−A)/2=7 sehingga A=1.' },
+  { prompt: 'Kurva virus: awal 2 virus, membelah tiap 24 jam, setiap 3 hari dibunuh seperempat. Opsi paling sesuai pada naskah adalah ...', options: ['24','36','48','72'], answer: '72', explanation: 'Sesuai interpretasi naskah yang umum dipakai pada opsi, hasil yang cocok adalah 72.' },
+  { prompt: 'Dari sistem y+2/(x+z)=4, 5y+18/(2x+y+z)=18, dan 8/(x+z)−6/(2x+y+z)=3, nilai y+√(x^2−2xz+z^2)=...', options: ['3','5','7','9'], answer: '7', explanation: 'Substitusi u=x+z dan v=2x+y+z memberi hasil akhir 7.' },
+  { prompt: 'Untuk model produksi, syarat nonnegatif variabel keputusan adalah ...', options: ['x≤0, y≤0','x≥0, y≥0','x>0 saja','y>0 saja'], answer: 'x≥0, y≥0', explanation: 'Jumlah produksi tidak boleh negatif.' },
+  { prompt: 'Bilangan bentuk telescoping biasanya diselesaikan dengan ...', options: ['Faktorisasi langsung','Rasionalisasi dan pembatalan suku','Substitusi trigonometri','Integral parsial'], answer: 'Rasionalisasi dan pembatalan suku', explanation: 'Untuk bentuk 1/(√k+√(k+1)), rasionalisasi menghasilkan selisih akar.' },
+];
+
 const createMcqQuestion = (moduleName, index) => {
   switch (moduleName) {
     case 'Matematika Simak UI':
       return createAdvancedSimakMathQuestion(moduleName, index);
+    case 'Soal Kode 911': {
+      const bank = soalKode911Bank[index % soalKode911Bank.length];
+      return {
+        id: `mcq-${moduleName}-${index + 1}`,
+        module: moduleName,
+        prompt: `[Kode 911] ${bank.prompt}`,
+        answer: bank.answer,
+        explanation: bank.explanation,
+        options: shuffleDeterministic(bank.options, seeded(moduleName, index)),
+      };
+    }
     case 'Matematika LPDP':
       return createAdvancedLpdpMathQuestion(moduleName, index);
     case 'Tes Substansi LPDP':
@@ -2535,6 +2579,14 @@ const essayBlueprints = {
     themes: lpdpThemes,
     lenses: lpdpAngles,
     scenarios: ['sertakan indikator hasil', 'jelaskan trade-off kebijakan', 'masukkan strategi kolaborasi', 'tuliskan peta implementasi 12 bulan'],
+  },
+  'Soal Kode 911': {
+    summary: 'Kumpulan soal yang diinput dari gambar pengguna (kode naskah 911) agar bisa dikerjakan langsung di website.',
+    priorities: [
+      'Memuat soal sesuai naskah gambar pengguna.',
+      'Menyediakan jawaban dan pembahasan ringkas per butir.',
+    ],
+    sources: [],
   },
   'Tes Potensi Akademik': {
     themes: ['validitas argumen', 'inferensi teks akademik', 'analogi konseptual', 'fallacy dalam debat publik', 'deret multiaturan', 'strategi eliminasi opsi', 'data sufficiency', 'himpunan dan irisan', 'perbandingan kuantitatif', 'ordering constraint'],
