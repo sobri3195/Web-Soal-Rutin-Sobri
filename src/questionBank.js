@@ -11,6 +11,7 @@ export const moduleConfigs = [
   { name: 'Tes Potensi Akademik (Varian Intensif)', tag: 'Verbal, Numerik & Logika • Hard mode campuran', questionCount: 200 },
   { name: 'Soal Onkologi Radiasi', tag: 'Konsep Medis', questionCount: 200 },
   { name: 'Soal Toefl', tag: 'English Mastery', questionCount: 200 },
+  { name: 'TOEFL FIB UI & LIA Pramuka', tag: 'Structure, Reading, & Vocabulary', questionCount: 100 },
   { name: 'UKMPPD', tag: 'Semua Stase Kedokteran', questionCount: 150 },
   { name: 'TPA Bappenas', tag: 'Verbal, Numerik & Logika', questionCount: 100 },
   { name: 'TPA Simak UI Paskasarjana', tag: 'Verbal, Numerik & Logika', questionCount: 100 },
@@ -127,6 +128,21 @@ export const moduleResearchNotes = {
       {
         label: 'ETS — TOEFL iBT Reading question types (Inference and Rhetorical Purpose)',
         url: 'https://www.br.ets.org/toefl/test-takers/ibt/about/content/reading.html/ets.html',
+      },
+    ],
+  },
+  'TOEFL FIB UI & LIA Pramuka': {
+    summary: 'Modul ini fokus pada pola yang umum dipakai di kelas persiapan TOEFL FIB UI dan LIA Pramuka: structure, vocabulary akademik, dan reading inference.',
+    priorities: [
+      'Structure menekankan agreement, clause reduction, inversion, serta subjunctive yang sering muncul di latihan TOEFL.',
+      'Vocabulary diarahkan ke diksi akademik berfrekuensi tinggi dengan distraktor makna yang berdekatan.',
+      'Reading comprehension menekankan main idea, detail tersirat, inference, dan rhetorical purpose.',
+      'Jumlah soal dibatasi 100 butir agar sesuai format latihan intensif. ',
+    ],
+    sources: [
+      {
+        label: 'ETS — TOEFL iBT Test Content and Structure',
+        url: 'https://www.ets.org/toefl/test-takers/ibt/about/content/',
       },
     ],
   },
@@ -2482,6 +2498,7 @@ const createMcqQuestion = (moduleName, index) => {
     case 'Soal Onkologi Radiasi':
       return createAdvancedOncologyQuestion(moduleName, index);
     case 'Soal Toefl':
+    case 'TOEFL FIB UI & LIA Pramuka':
       return createAdvancedToeflQuestion(moduleName, index);
     case 'IELTS':
       return createAdvancedIeltsQuestion(moduleName, index);
@@ -2539,6 +2556,11 @@ const essayBlueprints = {
     lenses: ['untuk target skor tinggi', 'untuk menghindari jebakan distraktor', 'untuk membaca cepat namun akurat', 'untuk revisi mandiri'],
     scenarios: ['beri contoh kalimat baru', 'jelaskan error pattern umum', 'bandingkan jawaban benar dan hampir benar'],
   },
+  'TOEFL FIB UI & LIA Pramuka': {
+    themes: ['main idea & detail', 'inference reading', 'advanced structure', 'subject-verb agreement', 'academic vocabulary precision'],
+    lenses: ['untuk drill kelas intensif', 'untuk review mandiri', 'untuk target skor tinggi'],
+    scenarios: ['beri contoh kalimat baru', 'jelaskan jebakan grammar', 'bandingkan opsi paling tepat'],
+  },
   UKMPPD: {
     themes: ['prioritas stabilisasi', 'penentuan diagnosis kerja', 'indikasi rujukan emergensi', 'pemilihan terapi awal', 'interpretasi red flags'],
     lenses: ['pada layanan primer', 'di IGD rujukan', 'saat sumber daya terbatas', 'pada pasien dengan komorbid'],
@@ -2580,6 +2602,7 @@ const essayHints = {
   'Tes Potensi Akademik (Varian Intensif)': ['Pisahkan premis eksplisit dan implisit.', 'Jelaskan mengapa distraktor tampak meyakinkan.', 'Tulis langkah bernalar, bukan hanya hasil.'],
   'Soal Onkologi Radiasi': ['Masukkan tujuan biologis dan konsekuensi klinis.', 'Bandingkan manfaat dan toksisitas.', 'Gunakan istilah teknis secara presisi.'],
   'Soal Toefl': ['Berikan contoh akademik, bukan percakapan kasual.', 'Soroti jebakan grammar atau inference.', 'Bandingkan opsi tepat dan hampir tepat.'],
+  'TOEFL FIB UI & LIA Pramuka': ['Prioritaskan gaya soal TOEFL klasik.', 'Soroti pola structure yang sering tertukar.', 'Jelaskan alasan eliminasi distraktor.'],
   UKMPPD: ['Utamakan keselamatan pasien dan waktu kritis.', 'Sebutkan red flag, diagnosis kerja, lalu tindakan.', 'Bedakan stabilisasi dari terapi definitif.'],
   'TPA Bappenas': ['Buat pola berpikir yang dapat diulang.', 'Tekankan efisiensi keputusan.', 'Cantumkan kesalahan umum yang harus dihindari.'],
   IELTS: ['Selaraskan jawaban dengan band descriptor.', 'Tunjukkan struktur respons yang jelas.', 'Berikan contoh frasa akademik yang natural.'],
@@ -2612,6 +2635,7 @@ const flashcardBlueprints = {
   'Tes Potensi Akademik (Varian Intensif)': ['premis', 'inferensi', 'analogi', 'fallacy', 'eliminasi opsi', 'pola campuran', 'data sufficiency', 'rasio tabel', 'asumsi', 'constraint'],
   'Soal Onkologi Radiasi': ['4R radiobiologi', 'CTV/PTV', 'IMRT', 'LET', 'OER', 'toxicity grading'],
   'Soal Toefl': ['subjunctive', 'inversion', 'rhetorical purpose', 'inference', 'collocation', 'hedging'],
+  'TOEFL FIB UI & LIA Pramuka': ['structure', 'agreement', 'inference', 'main idea', 'vocabulary', 'rhetorical purpose'],
   UKMPPD: ['triase', 'red flag', 'reperfusi', 'rehidrasi', 'MgSO4', 'door-to-CT'],
   'TPA Bappenas': ['silogisme', 'deret', 'interpretasi tabel', 'synonym precision', 'assumption check', 'time strategy', 'rasio', 'strengthening'],
   IELTS: ['Task Response', 'Cohesion', 'Lexical Resource', 'Band 7 evidence', 'Part 3 development', 'overview statement'],
