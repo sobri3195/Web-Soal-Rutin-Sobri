@@ -2405,6 +2405,57 @@ const createAdvancedSpanishQuestion = (moduleName, index) => {
   };
 };
 
+
+
+const simakUiPascasarjanaQuestionBank = Array.from({ length: 100 }, (_, index) => {
+  const n = index + 1;
+  const type = index % 4;
+  if (type === 0) {
+    const base = 12 + (index % 9);
+    return {
+      prompt: `[TPA SIMAK UI Pascasarjana • Verbal] Pilih padanan makna paling tepat untuk kata "esensial" pada konteks akademik #${n}.`,
+      answer: 'fundamental',
+      options: ['fundamental', 'sementara', 'dangkal', 'seremonial'],
+      explanation: 'Esensial dalam konteks akademik bermakna paling mendasar/fundamental.',
+    };
+  }
+  if (type === 1) {
+    const a = 2 + (index % 6);
+    const b = 3 + (index % 5);
+    const answer = a * b + a;
+    return {
+      prompt: `[TPA SIMAK UI Pascasarjana • Numerik] Jika x = ${a} dan y = ${b}, tentukan nilai x(y+1).`,
+      answer: String(answer),
+      options: [String(answer), String(answer + 2), String(answer - 2), String(a + b)],
+      explanation: 'Hitung terlebih dahulu (y+1), lalu kalikan dengan x.',
+    };
+  }
+  if (type === 2) {
+    return {
+      prompt: `[TPA SIMAK UI Pascasarjana • Logika] Semua peneliti yang teliti mencatat data. Sebagian asisten adalah peneliti teliti. Kesimpulan valid adalah...`,
+      answer: 'Sebagian asisten mencatat data.',
+      options: [
+        'Sebagian asisten mencatat data.',
+        'Semua asisten mencatat data.',
+        'Tidak ada asisten yang mencatat data.',
+        'Semua pencatat data adalah asisten.',
+      ],
+      explanation: 'Dari premis “sebagian asisten adalah peneliti teliti” dan “semua peneliti teliti mencatat data”, maka sebagian asisten mencatat data.',
+    };
+  }
+  return {
+    prompt: `[TPA SIMAK UI Pascasarjana • Penalaran] Pernyataan paling memperkuat argumen "program mentoring meningkatkan kelulusan" adalah...`,
+    answer: 'Kelompok dengan mentoring memiliki kelulusan lebih tinggi pada karakteristik awal yang sebanding.',
+    options: [
+      'Kelompok dengan mentoring memiliki kelulusan lebih tinggi pada karakteristik awal yang sebanding.',
+      'Peserta menyukai mentor yang ramah.',
+      'Program mentoring berjalan pada malam hari.',
+      'Sebagian peserta tidak hadir penuh di awal program.',
+    ],
+    explanation: 'Argumen paling kuat muncul ketika dibandingkan dua kelompok sebanding dengan hasil kelulusan berbeda.',
+  };
+});
+
 const createMcqQuestion = (moduleName, index) => {
   switch (moduleName) {
     case 'Matematika Simak UI':
@@ -2417,8 +2468,17 @@ const createMcqQuestion = (moduleName, index) => {
     case 'Tes Potensi Akademik':
     case 'Tes Potensi Akademik (Varian Intensif)':
     case 'TPA Bappenas':
-    case 'TPA Simak UI Paskasarjana':
-      return createAdvancedTpaQuestion(moduleName, index);
+    case 'TPA Simak UI Paskasarjana': {
+      const bank = simakUiPascasarjanaQuestionBank[index % simakUiPascasarjanaQuestionBank.length];
+      return {
+        id: `mcq-${moduleName}-${index + 1}`,
+        module: moduleName,
+        prompt: bank.prompt,
+        answer: bank.answer,
+        explanation: bank.explanation,
+        options: shuffleDeterministic(bank.options, seeded(moduleName, index)),
+      };
+    }
     case 'Soal Onkologi Radiasi':
       return createAdvancedOncologyQuestion(moduleName, index);
     case 'Soal Toefl':
