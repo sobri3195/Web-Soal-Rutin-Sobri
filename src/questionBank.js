@@ -2628,12 +2628,9 @@ const essayBlueprints = {
     scenarios: ['sertakan indikator hasil', 'jelaskan trade-off kebijakan', 'masukkan strategi kolaborasi', 'tuliskan peta implementasi 12 bulan'],
   },
   'Soal Kode 911': {
-    summary: 'Kumpulan soal yang diinput dari gambar pengguna (kode naskah 911) agar bisa dikerjakan langsung di website.',
-    priorities: [
-      'Memuat soal sesuai naskah gambar pengguna.',
-      'Menyediakan jawaban dan pembahasan ringkas per butir.',
-    ],
-    sources: [],
+    themes: ['aritmetika naskah 911', 'aljabar dasar', 'geometri bidang', 'pola bilangan', 'perbandingan kuantitatif', 'logika soal gambar'],
+    lenses: ['jelaskan langkah paling singkat', 'identifikasi informasi kunci dari naskah', 'bandingkan dengan distraktor terdekat', 'tuliskan pengecekan akhir jawaban'],
+    scenarios: ['sesuai format soal asli', 'dengan pembahasan ringkas', 'tanpa kalkulator', 'untuk review kesalahan setelah tryout'],
   },
   'Tes Potensi Akademik': {
     themes: ['validitas argumen', 'inferensi teks akademik', 'analogi konseptual', 'fallacy dalam debat publik', 'deret multiaturan', 'strategi eliminasi opsi', 'data sufficiency', 'himpunan dan irisan', 'perbandingan kuantitatif', 'ordering constraint'],
@@ -2695,6 +2692,7 @@ const essayBlueprints = {
 const essayHints = {
   'Matematika Simak UI': ['Cari invariant atau bentuk ekuivalen.', 'Tunjukkan alasan setiap transformasi aljabar.', 'Pisahkan strategi utama dan pengecekan akhir.'],
   'Matematika LPDP': ['Nyatakan asumsi numerik sebelum menghitung.', 'Bedakan hasil hitung dan interpretasi kebijakan.', 'Uji sensitivitas jika variabel kunci berubah.'],
+  'Soal Kode 911': ['Ambil data penting dari naskah terlebih dahulu.', 'Tulis langkah hitung inti sebelum memilih jawaban.', 'Cocokkan hasil dengan opsi yang paling masuk akal.'],
   'Tes Substansi LPDP': ['Gunakan struktur masalah → strategi → indikator → risiko.', 'Hubungkan kontribusi dengan prioritas nasional.', 'Tunjukkan trade-off dan keputusan prioritas.'],
   'Tes Substansi LPDP (Varian Strategis)': ['Gunakan struktur masalah → strategi → indikator → risiko.', 'Hubungkan kontribusi dengan prioritas nasional.', 'Tunjukkan trade-off dan keputusan prioritas.'],
   'Tes Potensi Akademik': ['Pisahkan premis eksplisit dan implisit.', 'Jelaskan mengapa distraktor tampak meyakinkan.', 'Tulis langkah bernalar, bukan hanya hasil.'],
@@ -2728,6 +2726,7 @@ const createEssayQuestion = (moduleName, index) => {
 const flashcardBlueprints = {
   'Matematika Simak UI': ['identitas aljabar', 'diskriminan', 'deret aritmetika', 'deret geometri', 'optimasi kuadrat', 'transformasi grafik'],
   'Matematika LPDP': ['present value', 'future value', 'BEP', 'persentase bertingkat', 'rasio majemuk', 'probabilitas keputusan'],
+  'Soal Kode 911': ['data naskah', 'opsi dekat', 'langkah hitung', 'pola gambar', 'eliminasi jawaban', 'cek satuan'],
   'Tes Substansi LPDP': ['theory of change', 'stakeholder mapping', 'SMART metric', 'risk register', 'impact pathway', 'exit strategy'],
   'Tes Potensi Akademik': ['premis', 'inferensi', 'analogi', 'fallacy', 'eliminasi opsi', 'pola campuran', 'data sufficiency', 'rasio tabel', 'asumsi', 'constraint'],
   'Tes Substansi LPDP (Varian Strategis)': ['theory of change', 'stakeholder mapping', 'SMART metric', 'risk register', 'impact pathway', 'exit strategy'],
