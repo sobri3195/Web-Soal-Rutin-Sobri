@@ -29,6 +29,7 @@ export const sanitizeImportedState = ({
   }
 
   safe.mcqAnswers = asRecord(snapshot.mcqAnswers);
+  safe.mcqSelections = asRecord(snapshot.mcqSelections);
   safe.mcqShowExplanation = asRecord(snapshot.mcqShowExplanation);
   safe.essayAnswers = asRecord(snapshot.essayAnswers);
   safe.flashcardFlips = asRecord(snapshot.flashcardFlips);
@@ -52,6 +53,9 @@ export const sanitizeImportedState = ({
   }
   if (typeof snapshot.darkMode === 'boolean') {
     safe.darkMode = snapshot.darkMode;
+  }
+  if (snapshot.viewMode === 'focus' || snapshot.viewMode === 'list') {
+    safe.viewMode = snapshot.viewMode;
   }
 
   return safe;

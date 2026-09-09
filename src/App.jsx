@@ -23,10 +23,23 @@ const STORAGE_KEY = 'sobri-practice-state-v4';
 const VALID_TYPES = ['mcq', 'essay', 'flashcards'];
 const VALID_MCQ_FILTERS = ['all', 'unanswered', 'correct', 'wrong'];
 
+// Bank soal memakai notasi teks seperti x^2 dan a_1. Renderer kecil ini menjaga
+// nilai sumber tetap utuh sambil menyajikan pangkat/indeks secara semantik.
+function MathText({ children }) {
+  const text = String(children ?? '');
+  const parts = text.split(/([_^](?:\{[^}]+\}|-?\d+(?:\.\d+)?|[A-Za-z]))/g);
+  return parts.map((part, index) => {
+    if (part.startsWith('^')) return <sup key={`${part}-${index}`}>{part.slice(1).replace(/[{}]/g, '')}</sup>;
+    if (part.startsWith('_')) return <sub key={`${part}-${index}`}>{part.slice(1).replace(/[{}]/g, '')}</sub>;
+    return part;
+  });
+}
+
 const initialState = {
   selectedModule: modules[0],
   selectedType: 'mcq',
   mcqAnswers: {},
+  mcqSelections: {},
   mcqShowExplanation: {},
   essayAnswers: {},
   flashcardFlips: {},
@@ -39,6 +52,7 @@ const initialState = {
   showBookmarkedOnly: false,
   shuffleSeed: Date.now(),
   darkMode: true,
+  viewMode: 'focus',
 };
 
 function App() {
@@ -47,6 +61,9 @@ function App() {
   const [showShortcutHelp, setShowShortcutHelp] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [navigatorOpen, setNavigatorOpen] = useState(false);
+  const [jumpValue, setJumpValue] = useState('');
+  const [jumpError, setJumpError] = useState('');
   const [moduleQuery, setModuleQuery] = useState('');
   const importInputRef = useRef(null);
   const searchInputRef = useRef(null);
@@ -146,9 +163,15 @@ function App() {
     return shuffledItems.filter((item) => !state.masteredFlashcards[item.id]);
   }, [shuffledItems, state.selectedType, state.showMasteredFlashcards, state.masteredFlashcards]);
 
-  const totalPages = Math.max(1, Math.ceil(displayItems.length / PAGE_SIZE));
+  const itemsPerPage = state.viewMode === 'list' ? PAGE_SIZE : 1;
+  const totalPages = Math.max(1, Math.ceil(displayItems.length / itemsPerPage));
   const currentPage = Math.min(state.page, totalPages);
-  const pagedItems = displayItems.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const activeIndex = Math.min(displayItems.length - 1, (currentPage - 1) * itemsPerPage);
+  const pagedItems = displayItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const navigatorGroup = Math.max(0, Math.floor(Math.max(0, activeIndex) / 25));
+  const navigatorStart = navigatorGroup * 25;
+  const navigatorItems = displayItems.slice(navigatorStart, navigatorStart + 25);
+  const navigatorGroups = Math.max(1, Math.ceil(displayItems.length / 25));
 
   const { answeredCount, correctCount, accuracyRate, remainingMcqCount } = getMcqStats(
     moduleMcq,
@@ -184,7 +207,7 @@ function App() {
   const overallFavorites = Object.values(state.favorites).filter(Boolean).length;
   const nextAction = state.selectedType === 'mcq'
     ? remainingMcqCount > 0
-      ? `Selesaikan ${remainingMcqCount} MCQ tersisa agar progress modul menyentuh 100%.`
+      ? `Lanjutkan sesi ringan: kerjakan ${Math.min(10, remainingMcqCount)} dari ${remainingMcqCount} MCQ yang masih tersisa.`
       : 'Semua MCQ di modul ini sudah selesai. Lanjutkan review jawaban salah untuk menaikkan akurasi.'
     : state.selectedType === 'essay'
       ? essayAnsweredCount < moduleEssay.length
@@ -197,7 +220,7 @@ function App() {
   const jumpToRandomQuestion = () => {
     if (!displayItems.length) return;
     const randomIndex = Math.floor(Math.random() * displayItems.length);
-    updateState({ page: Math.floor(randomIndex / PAGE_SIZE) + 1 });
+    updateState({ page: Math.floor(randomIndex / itemsPerPage) + 1 });
   };
 
   const reshuffleQuestions = () => {
@@ -208,8 +231,36 @@ function App() {
   const jumpToItem = (itemId) => {
     const targetIndex = displayItems.findIndex((item) => item.id === itemId);
     if (targetIndex === -1) return;
-    updateState({ page: Math.floor(targetIndex / PAGE_SIZE) + 1 });
+    updateState({ page: Math.floor(targetIndex / itemsPerPage) + 1 });
     setToast('Navigasi soal diperbarui.');
+  };
+
+  const jumpToNumber = (event) => {
+    event.preventDefault();
+    const number = Number(jumpValue);
+    if (!Number.isInteger(number) || number < 1 || number > displayItems.length) {
+      setJumpError(`Masukkan nomor 1–${displayItems.length}.`);
+      return;
+    }
+    setJumpError('');
+    jumpToItem(displayItems[number - 1].id);
+    setNavigatorOpen(false);
+  };
+
+  const changeViewMode = (viewMode) => {
+    const currentItem = pagedItems[0];
+    const targetIndex = currentItem ? displayItems.findIndex((item) => item.id === currentItem.id) : 0;
+    const nextPerPage = viewMode === 'list' ? PAGE_SIZE : 1;
+    updateState({ viewMode, page: Math.floor(Math.max(0, targetIndex) / nextPerPage) + 1 });
+  };
+
+  const assessMcq = (question) => {
+    const selection = state.mcqSelections[question.id];
+    if (!selection) {
+      setToast('Pilih satu jawaban terlebih dahulu.');
+      return;
+    }
+    updateState({ mcqAnswers: { ...state.mcqAnswers, [question.id]: selection } });
   };
 
   const jumpToFirstUnanswered = () => {
@@ -219,7 +270,7 @@ function App() {
       setToast('Semua MCQ sudah terjawab. Mantap! 🎉');
       return;
     }
-    updateState({ mcqFilter: 'all', page: Math.floor(firstUnansweredIndex / PAGE_SIZE) + 1, showBookmarkedOnly: false });
+    updateState({ mcqFilter: 'all', page: Math.floor(firstUnansweredIndex / itemsPerPage) + 1, showBookmarkedOnly: false });
     setToast(`Lanjut ke soal MCQ #${firstUnansweredIndex + 1}`);
   };
 
@@ -246,7 +297,7 @@ function App() {
       setToast('Semua essai di modul ini sudah terisi. Mantap! 🎉');
       return;
     }
-    updateState({ page: Math.floor(firstUnansweredIndex / PAGE_SIZE) + 1, showBookmarkedOnly: false });
+    updateState({ page: Math.floor(firstUnansweredIndex / itemsPerPage) + 1, showBookmarkedOnly: false });
     setToast(`Lanjut ke essai #${firstUnansweredIndex + 1}`);
   };
 
@@ -277,7 +328,9 @@ function App() {
     const nextExplanations = { ...state.mcqShowExplanation };
     delete nextAnswers[questionId];
     delete nextExplanations[questionId];
-    updateState({ mcqAnswers: nextAnswers, mcqShowExplanation: nextExplanations });
+    const nextSelections = { ...state.mcqSelections };
+    delete nextSelections[questionId];
+    updateState({ mcqAnswers: nextAnswers, mcqSelections: nextSelections, mcqShowExplanation: nextExplanations });
     setToast('Jawaban MCQ dibersihkan.');
   };
 
@@ -356,12 +409,14 @@ function App() {
 
     if (state.selectedType === 'mcq') {
       const nextAnswers = { ...state.mcqAnswers };
+      const nextSelections = { ...state.mcqSelections };
       const nextExplanations = { ...state.mcqShowExplanation };
       moduleMcq.forEach((q) => {
         delete nextAnswers[q.id];
+        delete nextSelections[q.id];
         delete nextExplanations[q.id];
       });
-      updateState({ mcqAnswers: nextAnswers, mcqShowExplanation: nextExplanations });
+      updateState({ mcqAnswers: nextAnswers, mcqSelections: nextSelections, mcqShowExplanation: nextExplanations });
       setToast('Progress MCQ modul aktif berhasil direset.');
       return;
     }
@@ -408,6 +463,7 @@ function App() {
 
     updateState({
       mcqAnswers: filteredObject(state.mcqAnswers, moduleQuestionIds),
+      mcqSelections: filteredObject(state.mcqSelections, moduleQuestionIds),
       mcqShowExplanation: filteredObject(state.mcqShowExplanation, moduleQuestionIds),
       essayAnswers: filteredObject(state.essayAnswers, moduleEssayIds),
       flashcardFlips: filteredObject(state.flashcardFlips, moduleFlashcardIds),
@@ -468,6 +524,7 @@ function App() {
         selectedModule: state.selectedModule,
         selectedType: state.selectedType,
         mcqAnswers: state.mcqAnswers,
+        mcqSelections: state.mcqSelections,
         mcqShowExplanation: state.mcqShowExplanation,
         essayAnswers: state.essayAnswers,
         flashcardFlips: state.flashcardFlips,
@@ -479,6 +536,7 @@ function App() {
         showMasteredFlashcards: state.showMasteredFlashcards,
         showBookmarkedOnly: state.showBookmarkedOnly,
         darkMode: state.darkMode,
+        viewMode: state.viewMode,
       },
       stats: {
         mcqAnswered: answeredCount,
@@ -536,6 +594,8 @@ function App() {
       const flashcardIds = new Set(questionBank.flashcards.map((item) => item.id));
       const allIds = new Set([...mcqById.keys(), ...essayIds, ...flashcardIds]);
       safeData.mcqAnswers = Object.fromEntries(Object.entries(safeData.mcqAnswers)
+        .filter(([id, answer]) => mcqById.get(id)?.options.includes(answer)));
+      safeData.mcqSelections = Object.fromEntries(Object.entries(safeData.mcqSelections)
         .filter(([id, answer]) => mcqById.get(id)?.options.includes(answer)));
       safeData.mcqShowExplanation = Object.fromEntries(Object.entries(safeData.mcqShowExplanation)
         .filter(([id, value]) => mcqById.has(id) && typeof value === 'boolean'));
@@ -715,6 +775,10 @@ function App() {
             </label>
             </div>
             <div className="toolbar-actions">
+            <div className="view-switch" role="group" aria-label="Mode tampilan soal">
+              <button className={state.viewMode === 'focus' ? 'ghost active' : 'ghost'} onClick={() => changeViewMode('focus')}>▣ Satu soal</button>
+              <button className={state.viewMode === 'list' ? 'ghost active' : 'ghost'} onClick={() => changeViewMode('list')}>☷ Mode daftar</button>
+            </div>
             <button className="ghost" onClick={jumpToRandomQuestion}>🎲 Soal acak</button>
             <button className="ghost" onClick={reshuffleQuestions}>🔀 Acak ulang urutan</button>
             {state.selectedType === 'mcq' && (
@@ -739,25 +803,42 @@ function App() {
                   <p>Peta navigasi cepat</p>
                   <strong>{state.selectedType === 'flashcards' ? 'Flashcard Navigator' : 'Question Navigator'}</strong>
                 </div>
-                <p className="subtle-info">Klik nomor untuk lompat langsung. Warna menandakan status pengerjaan.</p>
+                <button className="ghost navigator-toggle" onClick={() => setNavigatorOpen((open) => !open)} aria-expanded={navigatorOpen}>☷ {navigatorOpen ? 'Tutup navigator' : 'Buka navigator'}</button>
+              </div>
+              <div className={navigatorOpen ? 'navigator-body open' : 'navigator-body'}>
+              <div className="navigator-controls">
+                <button className="ghost small" disabled={navigatorGroup === 0} onClick={() => jumpToItem(displayItems[Math.max(0, navigatorStart - 25)].id)}>← Kelompok</button>
+                <span>Nomor {navigatorStart + 1}–{Math.min(navigatorStart + 25, displayItems.length)} dari {displayItems.length}</span>
+                <button className="ghost small" disabled={navigatorGroup >= navigatorGroups - 1} onClick={() => jumpToItem(displayItems[Math.min(displayItems.length - 1, navigatorStart + 25)].id)}>Kelompok →</button>
               </div>
               <div className="question-map">
-                {displayItems.map((item, index) => {
+                {navigatorItems.map((item, index) => {
                   const status = getItemStatus(item);
                   const isFavorite = !!state.favorites[item.id];
+                  const itemNumber = navigatorStart + index + 1;
+                  const statusText = status === 'pending' ? 'Belum dijawab' : status === 'answered' ? 'Sudah dijawab' : status === 'correct' ? 'Benar' : status === 'wrong' ? 'Salah' : status === 'mastered' ? 'Dikuasai' : 'Ditinjau';
                   return (
                     <button
                       key={item.id}
                       type="button"
                       className={`question-chip ${status} ${pagedItems.some((entry) => entry.id === item.id) ? 'active' : ''}`}
                       onClick={() => jumpToItem(item.id)}
-                      title={isFavorite ? 'Favorit' : 'Klik untuk lompat'}
+                      title={`${statusText}${isFavorite ? ', favorit' : ''}`}
+                      aria-label={`Soal ${itemNumber}: ${statusText}${isFavorite ? ', favorit' : ''}`}
                     >
-                      <span>{index + 1}</span>
-                      {isFavorite ? <small>★</small> : null}
+                      <span>{itemNumber}</span>
+                      <small aria-hidden="true">{isFavorite ? '★' : status === 'pending' ? '○' : status === 'correct' ? '✓' : status === 'wrong' ? '×' : '●'}</small>
                     </button>
                   );
                 })}
+              </div>
+              <div className="navigator-legend"><span>▣ Aktif</span><span>○ Belum dijawab</span><span>● Sudah dijawab</span><span>★ Favorit</span></div>
+              <form className="jump-form" onSubmit={jumpToNumber} noValidate>
+                <label htmlFor="jump-question">Lompat ke soal</label>
+                <input id="jump-question" type="number" min="1" max={displayItems.length} value={jumpValue} onChange={(e) => { setJumpValue(e.target.value); setJumpError(''); }} placeholder={`1–${displayItems.length}`} aria-invalid={!!jumpError} aria-describedby={jumpError ? 'jump-error' : undefined} />
+                <button className="ghost" type="submit">Lompat</button>
+                {jumpError && <span className="field-error" id="jump-error" role="alert">{jumpError}</span>}
+              </form>
               </div>
             </section>
           )}
@@ -776,30 +857,31 @@ function App() {
 
           {state.selectedType === 'mcq' &&
             pagedItems.map((q, index) => {
-              const selected = state.mcqAnswers[q.id];
-              const isCorrect = selected === q.answer;
+              const selected = state.mcqSelections[q.id] || state.mcqAnswers[q.id];
+              const assessed = state.mcqAnswers[q.id];
+              const isCorrect = assessed === q.answer;
               const showExplanation = state.mcqShowExplanation[q.id];
               return (
                 <section className="card" key={q.id}>
                   <div className="question-header">
-                    <span className="question-number">Soal {(currentPage - 1) * PAGE_SIZE + index + 1}</span>
+                    <div className="question-meta"><span className="question-number">Soal {(currentPage - 1) * itemsPerPage + index + 1}</span><span>{q.prompt.match(/^\[([^\]]+)\]/)?.[1] || moduleMeta?.tag}</span></div>
                     <div className="question-actions-inline">
                       <button className={state.favorites[q.id] ? 'ghost small starred' : 'ghost small'} onClick={() => toggleFavorite(q.id)}>
                         {state.favorites[q.id] ? '★ Favorit' : '☆ Favorit'}
                       </button>
-                      {selected && (
+                      {assessed && (
                         <span className={`status-badge ${isCorrect ? 'correct' : 'wrong'}`}>
                           {isCorrect ? '✓ Benar' : '✗ Salah'}
                         </span>
                       )}
                     </div>
                   </div>
-                  <h3>{q.prompt}</h3>
+                  <h3><MathText>{q.prompt}</MathText></h3>
                   <div className="stack">
-                    {q.options.map((option) => (
+                    {q.options.map((option, optionIndex) => (
                       <label
                         key={option}
-                        className={`option ${selected ? (option === q.answer ? 'correct-answer' : (option === selected && option !== q.answer ? 'wrong-answer' : '')) : ''}`}
+                        className={`option ${selected === option ? 'selected-option' : ''} ${assessed ? (option === q.answer ? 'correct-answer' : (option === assessed && option !== q.answer ? 'wrong-answer' : '')) : ''}`}
                       >
                         <input
                           type="radio"
@@ -807,18 +889,20 @@ function App() {
                           checked={selected === option}
                           onChange={() =>
                             updateState({
-                              mcqAnswers: { ...state.mcqAnswers, [q.id]: option },
+                              mcqSelections: { ...state.mcqSelections, [q.id]: option },
+                              ...(assessed ? { mcqAnswers: Object.fromEntries(Object.entries(state.mcqAnswers).filter(([id]) => id !== q.id)), mcqShowExplanation: { ...state.mcqShowExplanation, [q.id]: false } } : {}),
                             })
                           }
                         />
-                        <span>{option}</span>
+                        <strong className="option-letter">{String.fromCharCode(65 + optionIndex)}</strong><span><MathText>{option}</MathText></span>
                       </label>
                     ))}
                   </div>
-                  {selected ? (
+                  {!assessed && <button className="assess-button tab" onClick={() => assessMcq(q)} disabled={!selected}>Periksa jawaban</button>}
+                  {assessed ? (
                     <div className="feedback-section">
                       <p className={isCorrect ? 'ok' : 'wrong'}>
-                        {isCorrect ? 'Jawaban benar! ✅' : `Jawabanmu: "${selected}" — Belum tepat. Jawaban benar: "${q.answer}"`}
+                        {isCorrect ? 'Jawaban benar! ✅' : `Jawabanmu: "${assessed}" — Belum tepat. Jawaban benar: "${q.answer}"`}
                       </p>
                       <div className="inline-actions-wrap">
                         <button
@@ -834,7 +918,7 @@ function App() {
                       {showExplanation && q.explanation && (
                         <div className="explanation-box">
                           <strong>💡 Penjelasan:</strong>
-                          <p>{q.explanation}</p>
+                          <p><MathText>{q.explanation}</MathText></p>
                         </div>
                       )}
                     </div>
@@ -850,7 +934,7 @@ function App() {
               return (
                 <section className="card" key={q.id}>
                   <div className="question-header">
-                    <span className="question-number">Soal {(currentPage - 1) * PAGE_SIZE + index + 1}</span>
+                    <span className="question-number">Soal {(currentPage - 1) * itemsPerPage + index + 1}</span>
                     <div className="question-actions-inline">
                       <button className={state.favorites[q.id] ? 'ghost small starred' : 'ghost small'} onClick={() => toggleFavorite(q.id)}>
                         {state.favorites[q.id] ? '★ Favorit' : '☆ Favorit'}
@@ -862,7 +946,7 @@ function App() {
                       )}
                     </div>
                   </div>
-                  <h3>{q.prompt}</h3>
+                  <h3><MathText>{q.prompt}</MathText></h3>
                   {q.hint && (
                     <div className="hint-box">
                       <strong>💡 Petunjuk:</strong> {q.hint}
@@ -911,7 +995,7 @@ function App() {
               return (
                 <section key={card.id} className={`card flashcard-wrapper ${mastered ? 'mastered-card' : ''}`}>
                   <div className="question-header">
-                    <span className="question-number">Kartu {(currentPage - 1) * PAGE_SIZE + index + 1}</span>
+                    <span className="question-number">Kartu {(currentPage - 1) * itemsPerPage + index + 1}</span>
                     <div className="question-actions-inline">
                       <button className={state.favorites[card.id] ? 'ghost small starred' : 'ghost small'} onClick={() => toggleFavorite(card.id)}>
                         {state.favorites[card.id] ? '★ Favorit' : '☆ Favorit'}
