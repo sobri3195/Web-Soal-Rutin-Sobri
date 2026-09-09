@@ -7,6 +7,7 @@ import {
   modules,
   PAGE_SIZE,
   questionBank,
+  questionAliases,
 } from './questionBank';
 import {
   MAX_IMPORT_FILE_SIZE,
@@ -18,10 +19,14 @@ import {
   getMcqStats,
   getTypeSummary,
 } from './utils/progressUtils';
+import { markDisplayed, nextUnseenId, reconcileCycle, reshuffleRemaining, startNewCycle } from './utils/sessionQueue';
 
 const STORAGE_KEY = 'sobri-practice-state-v4';
 const VALID_TYPES = ['mcq', 'essay', 'flashcards'];
 const VALID_MCQ_FILTERS = ['all', 'unanswered', 'correct', 'wrong'];
+const remapLegacyIds = (record) => Object.fromEntries(
+  Object.entries(record || {}).map(([id, value]) => [questionAliases[id] || id, value]),
+);
 
 // Bank soal memakai notasi teks seperti x^2 dan a_1. Renderer kecil ini menjaga
 // nilai sumber tetap utuh sambil menyajikan pangkat/indeks secara semantik.
@@ -53,6 +58,8 @@ const initialState = {
   shuffleSeed: Date.now(),
   darkMode: true,
   viewMode: 'focus',
+  practiceCycles: {},
+  reviewMode: false,
 };
 
 function App() {
@@ -80,7 +87,7 @@ function App() {
         validTypes: VALID_TYPES,
         validMcqFilters: VALID_MCQ_FILTERS,
       });
-      setState(safeParsed);
+      setState({ ...safeParsed, mcqAnswers: remapLegacyIds(safeParsed.mcqAnswers), mcqSelections: remapLegacyIds(safeParsed.mcqSelections), favorites: remapLegacyIds(safeParsed.favorites) });
     } catch {
       setState(initialState);
     }
@@ -106,13 +113,23 @@ function App() {
     () => moduleConfigs.find((item) => item.name === state.selectedModule),
     [state.selectedModule],
   );
-  const moduleQuestionCount = moduleMeta?.questionCount || DEFAULT_QUESTION_COUNT_PER_MODULE;
+  const moduleQuestionCount = moduleQuestionMap[state.selectedModule]?.mcq.length || DEFAULT_QUESTION_COUNT_PER_MODULE;
   const moduleResearch = moduleResearchNotes[state.selectedModule];
 
   const moduleMcq = moduleQuestionMap[state.selectedModule]?.mcq || [];
   const moduleEssay = moduleQuestionMap[state.selectedModule]?.essay || [];
   const moduleFlashcards = moduleQuestionMap[state.selectedModule]?.flashcards || [];
   const moduleFavorites = [...moduleMcq, ...moduleEssay, ...moduleFlashcards].filter((item) => state.favorites[item.id]).length;
+
+  useEffect(() => {
+    if (state.selectedType !== 'mcq') return;
+    const ids = moduleMcq.map((item) => item.id);
+    const current = state.practiceCycles[state.selectedModule];
+    const reconciled = reconcileCycle(current, ids);
+    if (JSON.stringify(current) !== JSON.stringify(reconciled)) {
+      updateState({ practiceCycles: { ...state.practiceCycles, [state.selectedModule]: reconciled } });
+    }
+  }, [state.selectedModule, state.selectedType, moduleMcq.length]);
 
   const filteredItems = useMemo(() => {
     const list = questionBank[state.selectedType] || [];
@@ -146,6 +163,11 @@ function App() {
 
   const shuffledItems = useMemo(() => {
     const list = [...filteredItems];
+    const cycle = state.practiceCycles[state.selectedModule];
+    if (state.selectedType === 'mcq' && cycle?.order) {
+      const rank = new Map(cycle.order.map((id, index) => [id, index]));
+      return list.sort((a, b) => (rank.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (rank.get(b.id) ?? Number.MAX_SAFE_INTEGER));
+    }
     if (list.length <= 1) return list;
     let seed = Math.abs(Number(state.shuffleSeed) || 1);
     for (let i = list.length - 1; i > 0; i -= 1) {
@@ -154,7 +176,7 @@ function App() {
       [list[i], list[j]] = [list[j], list[i]];
     }
     return list;
-  }, [filteredItems, state.shuffleSeed]);
+  }, [filteredItems, state.shuffleSeed, state.practiceCycles, state.selectedModule, state.selectedType]);
 
   const displayItems = useMemo(() => {
     if (state.selectedType !== 'flashcards' || state.showMasteredFlashcards) {
@@ -172,6 +194,13 @@ function App() {
   const navigatorStart = navigatorGroup * 25;
   const navigatorItems = displayItems.slice(navigatorStart, navigatorStart + 25);
   const navigatorGroups = Math.max(1, Math.ceil(displayItems.length / 25));
+
+  useEffect(() => {
+    if (state.selectedType !== 'mcq' || state.reviewMode || !pagedItems[0]) return;
+    const current = state.practiceCycles[state.selectedModule];
+    if (!current || current.displayed.includes(pagedItems[0].id)) return;
+    updateState({ practiceCycles: { ...state.practiceCycles, [state.selectedModule]: markDisplayed(current, pagedItems[0].id) } });
+  }, [state.selectedModule, state.selectedType, state.reviewMode, currentPage, pagedItems[0]?.id]);
 
   const { answeredCount, correctCount, accuracyRate, remainingMcqCount } = getMcqStats(
     moduleMcq,
@@ -219,13 +248,36 @@ function App() {
 
   const jumpToRandomQuestion = () => {
     if (!displayItems.length) return;
-    const randomIndex = Math.floor(Math.random() * displayItems.length);
-    updateState({ page: Math.floor(randomIndex / itemsPerPage) + 1 });
+    if (state.selectedType === 'mcq' && !state.reviewMode) {
+      const cycle = state.practiceCycles[state.selectedModule];
+      const id = cycle && nextUnseenId(cycle, filteredItems.map((item) => item.id));
+      if (!id) { setToast('Semua soal sesuai filter sudah ditampilkan. Ubah filter atau mulai siklus baru.'); return; }
+      jumpToItem(id);
+      return;
+    }
+    jumpToItem(displayItems[Math.floor(Math.random() * displayItems.length)].id);
   };
 
   const reshuffleQuestions = () => {
-    updateState({ shuffleSeed: Date.now(), page: 1 });
-    setToast('Urutan soal diacak ulang.');
+    if (state.selectedType === 'mcq') {
+      const cycle = reconcileCycle(state.practiceCycles[state.selectedModule], moduleMcq.map((item) => item.id));
+      updateState({ practiceCycles: { ...state.practiceCycles, [state.selectedModule]: reshuffleRemaining(cycle) } });
+      setToast('Hanya sisa soal yang belum ditampilkan yang diacak ulang.');
+    } else updateState({ shuffleSeed: Date.now(), page: 1 });
+  };
+
+  const beginNewCycle = () => {
+    const cycle = startNewCycle(moduleMcq.map((item) => item.id), state.practiceCycles[state.selectedModule]);
+    updateState({ practiceCycles: { ...state.practiceCycles, [state.selectedModule]: cycle }, page: 1, reviewMode: false });
+    setToast(`Siklus ${cycle.cycleNumber} dimulai.`);
+  };
+
+  const goToNextItem = () => {
+    if (state.selectedType === 'mcq' && !state.reviewMode) {
+      jumpToRandomQuestion();
+      return;
+    }
+    updateState({ page: Math.min(totalPages, currentPage + 1) });
   };
 
   const jumpToItem = (itemId) => {
@@ -286,7 +338,7 @@ function App() {
     }
     const firstWrongQuestion = wrongItems[0];
     const firstWrongIndex = moduleMcq.findIndex((q) => q.id === firstWrongQuestion.id);
-    updateState({ mcqFilter: 'wrong', page: 1, showBookmarkedOnly: false });
+    updateState({ mcqFilter: 'wrong', page: 1, showBookmarkedOnly: false, reviewMode: true });
     setToast(`Review soal salah dimulai dari #${firstWrongIndex + 1}`);
   };
 
@@ -496,12 +548,13 @@ function App() {
   };
 
   const onChangeModule = (moduleName) => {
-    updateState({ selectedModule: moduleName, page: 1, query: '', mcqFilter: 'all', showBookmarkedOnly: false });
+    const savedPosition = state.practiceCycles[moduleName]?.position || 0;
+    updateState({ selectedModule: moduleName, page: savedPosition + 1, query: '', mcqFilter: 'all', showBookmarkedOnly: false, reviewMode: false });
     setSidebarOpen(false);
   };
 
   const onChangeType = (type) => {
-    updateState({ selectedType: type, page: 1, query: '', mcqFilter: 'all', showBookmarkedOnly: false });
+    updateState({ selectedType: type, page: 1, query: '', mcqFilter: 'all', showBookmarkedOnly: false, reviewMode: false });
   };
 
   const resetViewState = () => {
@@ -537,6 +590,8 @@ function App() {
         showBookmarkedOnly: state.showBookmarkedOnly,
         darkMode: state.darkMode,
         viewMode: state.viewMode,
+        practiceCycles: state.practiceCycles,
+        reviewMode: state.reviewMode,
       },
       stats: {
         mcqAnswered: answeredCount,
@@ -588,6 +643,9 @@ function App() {
         validTypes: VALID_TYPES,
         validMcqFilters: VALID_MCQ_FILTERS,
       });
+      safeData.mcqAnswers = remapLegacyIds(safeData.mcqAnswers);
+      safeData.mcqSelections = remapLegacyIds(safeData.mcqSelections);
+      safeData.favorites = remapLegacyIds(safeData.favorites);
 
       const mcqById = new Map(questionBank.mcq.map((item) => [item.id, item]));
       const essayIds = new Set(questionBank.essay.map((item) => item.id));
@@ -781,6 +839,7 @@ function App() {
             </div>
             <button className="ghost" onClick={jumpToRandomQuestion}>🎲 Soal acak</button>
             <button className="ghost" onClick={reshuffleQuestions}>🔀 Acak ulang urutan</button>
+            {state.selectedType === 'mcq' && <button className="ghost" onClick={beginNewCycle}>↻ Mulai siklus baru</button>}
             {state.selectedType === 'mcq' && (
               <button className="ghost" onClick={jumpToFirstUnanswered}>➡️ Lanjut soal belum dijawab</button>
             )}
@@ -1081,8 +1140,8 @@ function App() {
             </label>
             <button
               className="tab"
-              onClick={() => updateState({ page: Math.min(totalPages, currentPage + 1) })}
-              disabled={currentPage === totalPages}
+              onClick={goToNextItem}
+              disabled={state.selectedType !== 'mcq' && currentPage === totalPages}
             >
               Berikutnya →
             </button>

@@ -35,6 +35,15 @@ export const sanitizeImportedState = ({
   safe.flashcardFlips = asRecord(snapshot.flashcardFlips);
   safe.masteredFlashcards = asRecord(snapshot.masteredFlashcards);
   safe.favorites = asRecord(snapshot.favorites);
+  safe.practiceCycles = Object.fromEntries(Object.entries(asRecord(snapshot.practiceCycles))
+    .filter(([, cycle]) => cycle && Array.isArray(cycle.order) && Array.isArray(cycle.displayed))
+    .map(([module, cycle]) => [module, {
+      order: cycle.order.filter((id) => typeof id === 'string'),
+      displayed: cycle.displayed.filter((id) => typeof id === 'string'),
+      position: Number.isInteger(cycle.position) && cycle.position >= 0 ? cycle.position : 0,
+      cycleNumber: Number.isInteger(cycle.cycleNumber) && cycle.cycleNumber > 0 ? cycle.cycleNumber : 1,
+    }]));
+  safe.reviewMode = snapshot.reviewMode === true;
 
   if (typeof snapshot.query === 'string') {
     safe.query = snapshot.query;

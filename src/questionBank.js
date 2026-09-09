@@ -1,3 +1,5 @@
+import { auditMcqBank } from './utils/questionValidation.js';
+
 export const moduleConfigs = [
   {
     name: 'Matematika Simak UI',
@@ -2844,8 +2846,9 @@ const buildQuestionBank = () => {
     }
   });
 
+  const auditedMcq = auditMcqBank(mcq.map(enrichQuestionStructure));
   const bank = {
-    mcq: ensureUniquePrompts(mcq, 'mcq').map(enrichQuestionStructure),
+    mcq: auditedMcq.active,
     essay: ensureUniquePrompts(essay, 'essay'),
     flashcards: ensureUniquePrompts(flashcards, 'flashcards'),
   };
@@ -2855,10 +2858,17 @@ const buildQuestionBank = () => {
   validateUniqueness(bank.essay, 'essay');
   validateUniqueness(bank.flashcards, 'flashcards');
 
-  return bank;
+  return { bank, audit: auditedMcq };
 };
 
-export const questionBank = buildQuestionBank();
+const builtQuestionBank = buildQuestionBank();
+export const questionBank = builtQuestionBank.bank;
+export const questionAliases = builtQuestionBank.audit.aliases;
+export const questionAudit = {
+  modules: builtQuestionBank.audit.report,
+  duplicates: builtQuestionBank.audit.duplicates,
+  requiresReview: builtQuestionBank.audit.review,
+};
 export const moduleQuestionMap = moduleConfigs.reduce((acc, module) => {
   acc[module.name] = {
     mcq: questionBank.mcq.filter((question) => question.module === module.name),
