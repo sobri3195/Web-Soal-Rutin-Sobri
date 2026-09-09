@@ -16,7 +16,6 @@ import {
 import {
   buildModuleCompletionMap,
   getMcqStats,
-  getReadinessScore,
   getTypeSummary,
 } from './utils/progressUtils';
 
@@ -47,9 +46,10 @@ function App() {
   const [toast, setToast] = useState('');
   const [showShortcutHelp, setShowShortcutHelp] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [moduleQuery, setModuleQuery] = useState('');
   const importInputRef = useRef(null);
   const searchInputRef = useRef(null);
-  const contentRef = useRef(null);
 
   useEffect(() => {
     const savedState = localStorage.getItem(STORAGE_KEY);
@@ -150,7 +150,7 @@ function App() {
   const currentPage = Math.min(state.page, totalPages);
   const pagedItems = displayItems.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
-  const { answeredCount, correctCount, progressPercent, accuracyRate, remainingMcqCount } = getMcqStats(
+  const { answeredCount, correctCount, accuracyRate, remainingMcqCount } = getMcqStats(
     moduleMcq,
     state.mcqAnswers,
   );
@@ -160,7 +160,6 @@ function App() {
   const filteredSummary = displayItems.length === filteredItems.length
     ? `${displayItems.length} item tampil`
     : `${displayItems.length} dari ${filteredItems.length} item tampil`;
-  const canResetView = state.page > 1 || !!state.query || state.mcqFilter !== 'all' || !state.showMasteredFlashcards || state.showBookmarkedOnly;
 
   const typeSummary = getTypeSummary({
     selectedType: state.selectedType,
@@ -174,11 +173,13 @@ function App() {
     moduleFlashcardsLength: moduleFlashcards.length,
   });
   const typeProgressPercent = typeSummary.total > 0 ? Math.round((typeSummary.done / typeSummary.total) * 100) : 0;
-  const readinessScore = getReadinessScore({ accuracyRate, progressPercent, typeProgressPercent });
 
   const moduleCompletionMap = useMemo(() => {
     return buildModuleCompletionMap(moduleConfigs, moduleQuestionMap, state.mcqAnswers);
   }, [state.mcqAnswers]);
+  const visibleModules = moduleConfigs.filter((module) =>
+    `${module.name} ${module.tag}`.toLowerCase().includes(moduleQuery.trim().toLowerCase()),
+  );
 
   const overallFavorites = Object.values(state.favorites).filter(Boolean).length;
   const nextAction = state.selectedType === 'mcq'
@@ -328,7 +329,10 @@ function App() {
       if (event.key.toLowerCase() === 'r') jumpToRandomQuestion();
       if (event.key.toLowerCase() === 'b') updateState({ showBookmarkedOnly: !state.showBookmarkedOnly, page: 1 });
       if (event.key === '?') setShowShortcutHelp(true);
-      if (event.key === 'Escape') setShowShortcutHelp(false);
+      if (event.key === 'Escape') {
+        setShowShortcutHelp(false);
+        setSidebarOpen(false);
+      }
     };
 
     window.addEventListener('keydown', onKeydown);
@@ -336,17 +340,13 @@ function App() {
   }, [currentPage, totalPages, state.showBookmarkedOnly]);
 
   useEffect(() => {
-    const contentEl = contentRef.current;
-    if (!contentEl) return undefined;
-
-    const onScroll = () => setShowBackToTop(contentEl.scrollTop > 220);
-
-    contentEl.addEventListener('scroll', onScroll);
-    return () => contentEl.removeEventListener('scroll', onScroll);
+    const onScroll = () => setShowBackToTop(window.scrollY > 220);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   useEffect(() => {
-    contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [state.selectedModule, state.selectedType, currentPage]);
 
   const resetCurrentType = () => {
@@ -441,6 +441,7 @@ function App() {
 
   const onChangeModule = (moduleName) => {
     updateState({ selectedModule: moduleName, page: 1, query: '', mcqFilter: 'all', showBookmarkedOnly: false });
+    setSidebarOpen(false);
   };
 
   const onChangeType = (type) => {
@@ -530,6 +531,23 @@ function App() {
         validMcqFilters: VALID_MCQ_FILTERS,
       });
 
+      const mcqById = new Map(questionBank.mcq.map((item) => [item.id, item]));
+      const essayIds = new Set(questionBank.essay.map((item) => item.id));
+      const flashcardIds = new Set(questionBank.flashcards.map((item) => item.id));
+      const allIds = new Set([...mcqById.keys(), ...essayIds, ...flashcardIds]);
+      safeData.mcqAnswers = Object.fromEntries(Object.entries(safeData.mcqAnswers)
+        .filter(([id, answer]) => mcqById.get(id)?.options.includes(answer)));
+      safeData.mcqShowExplanation = Object.fromEntries(Object.entries(safeData.mcqShowExplanation)
+        .filter(([id, value]) => mcqById.has(id) && typeof value === 'boolean'));
+      safeData.essayAnswers = Object.fromEntries(Object.entries(safeData.essayAnswers)
+        .filter(([id, answer]) => essayIds.has(id) && typeof answer === 'string'));
+      safeData.flashcardFlips = Object.fromEntries(Object.entries(safeData.flashcardFlips)
+        .filter(([id, value]) => flashcardIds.has(id) && typeof value === 'boolean'));
+      safeData.masteredFlashcards = Object.fromEntries(Object.entries(safeData.masteredFlashcards)
+        .filter(([id, value]) => flashcardIds.has(id) && typeof value === 'boolean'));
+      safeData.favorites = Object.fromEntries(Object.entries(safeData.favorites)
+        .filter(([id, value]) => allIds.has(id) && typeof value === 'boolean'));
+
       setState((prev) => ({ ...prev, ...safeData }));
       setToast('Progress berhasil di-import.');
     } catch {
@@ -553,22 +571,27 @@ function App() {
     <div className="app-shell">
       <div className="glow glow-top" />
       <div className="glow glow-bottom" />
+      <button className="mobile-menu" onClick={() => setSidebarOpen(true)} aria-label="Buka daftar modul" aria-expanded={sidebarOpen}>☰ <span>Modul</span></button>
+      {sidebarOpen && <button className="drawer-overlay" aria-label="Tutup menu modul" onClick={() => setSidebarOpen(false)} />}
       <div className="layout">
-        <aside className="sidebar">
-          <h1>Sobri Practice Hub</h1>
+        <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`} aria-label="Navigasi modul">
+          <div className="sidebar-title"><h1>Sobri Practice Hub</h1><button className="drawer-close ghost" onClick={() => setSidebarOpen(false)} aria-label="Tutup menu">✕</button></div>
           <p className="subtle">{moduleQuestionCount} soal pada modul aktif • responsif • autosave</p>
+          <label className="module-search"><span className="sr-only">Cari modul</span><input value={moduleQuery} onChange={(e) => setModuleQuery(e.target.value)} placeholder="Cari modul..." /></label>
           <div className="menu-group">
-            {moduleConfigs.map((module) => (
+            {visibleModules.map((module) => (
               <button
                 key={module.name}
                 className={state.selectedModule === module.name ? 'active menu-btn' : 'menu-btn'}
                 onClick={() => onChangeModule(module.name)}
+                aria-current={state.selectedModule === module.name ? 'page' : undefined}
               >
                 <strong>{module.name}</strong>
                 <small>{module.tag}</small>
                 <small>Progress MCQ {moduleCompletionMap[module.name] || 0}%</small>
               </button>
             ))}
+            {!visibleModules.length && <p className="sidebar-empty">Modul tidak ditemukan.</p>}
           </div>
           <div className="sidebar-footer">
             <input
@@ -578,29 +601,26 @@ function App() {
               onChange={importProgress}
               style={{ display: 'none' }}
             />
-            <button className="ghost" onClick={() => updateState({ darkMode: !state.darkMode })}>
-              {state.darkMode ? '☀️ Light mode' : '🌙 Dark mode'}
-            </button>
-            <button className="ghost" onClick={exportProgress}>
-              📊 Export Progress
-            </button>
-            <button className="ghost" onClick={triggerImportProgress}>
-              📥 Import Progress
-            </button>
-            <button className="ghost danger" onClick={resetAllProgress}>
-              ♻️ Reset Semua Progress
-            </button>
+            <details className="settings"><summary>⚙️ Pengaturan & data</summary><div className="settings-actions">
+              <button className="ghost" onClick={() => updateState({ darkMode: !state.darkMode })}>{state.darkMode ? '☀️ Tema terang' : '🌙 Tema gelap'}</button>
+              <button className="ghost" onClick={exportProgress}>↗ Ekspor progres</button>
+              <button className="ghost" onClick={triggerImportProgress}>↙ Impor progres</button>
+              <button className="ghost" onClick={resetViewState}>↺ Reset tampilan</button>
+              <button className="ghost danger" onClick={resetCurrentType}>Reset tipe aktif</button>
+              <button className="ghost danger" onClick={resetModuleProgress}>Reset modul aktif</button>
+              <button className="ghost danger" onClick={resetAllProgress}>Reset semua progres</button>
+            </div></details>
           </div>
         </aside>
 
-        <main className="content" ref={contentRef}>
+        <main className="content">
           <header>
             <div>
               <h2>{state.selectedModule}</h2>
               <p>{moduleMeta?.tag}</p>
               {moduleResearch && (
-                <div className="research-note">
-                  <strong>Riset blueprint</strong>
+                <details className="research-note">
+                  <summary><strong>Riset blueprint</strong><span>Buka referensi modul</span></summary>
                   <p>{moduleResearch.summary}</p>
                   <ul>
                     {moduleResearch.priorities.map((item) => (
@@ -614,7 +634,7 @@ function App() {
                       </a>
                     ))}
                   </div>
-                </div>
+                </details>
               )}
             </div>
             <div className="tabs">
@@ -637,57 +657,25 @@ function App() {
 
           <section className="stats-grid">
             <article className="stat-card">
-              <span>Total Soal</span>
-              <strong>{moduleQuestionCount}</strong>
+              <span>{typeSummary.title.replace('Progress ', '')}</span>
+              <strong>{typeSummary.total} item</strong>
             </article>
             <article className="stat-card">
-              <span>MCQ Terjawab</span>
-              <strong>
-                {answeredCount}/{moduleMcq.length}
-              </strong>
+              <span>{state.selectedType === 'flashcards' ? 'Dikuasai' : 'Terjawab'}</span>
+              <strong>{typeSummary.done}/{typeSummary.total}</strong>
             </article>
             <article className="stat-card">
               <span>Akurasi</span>
-              <strong>{accuracyRate}%</strong>
+              <strong>{state.selectedType === 'mcq' ? (answeredCount ? `${accuracyRate}%` : '—') : '—'}</strong>
             </article>
             <article className="stat-card">
               <span>Progress</span>
-              <strong>{progressPercent}%</strong>
-            </article>
-            <article className="stat-card">
-              <span>Essai Terisi</span>
-              <strong>{essayAnsweredCount}/{moduleEssay.length}</strong>
-            </article>
-            <article className="stat-card">
-              <span>Flashcard Dikuasai</span>
-              <strong>{masteredFlashcardsCount}/{moduleFlashcards.length}</strong>
+              <strong>{typeProgressPercent}%</strong>
             </article>
           </section>
 
-          <section className="insight-grid">
-            <article className="card progress-panel">
-              <div>
-                <p>{typeSummary.title}</p>
-                <strong>{typeProgressPercent}%</strong>
-                <p>{typeSummary.done}/{typeSummary.total} selesai • {typeSummary.helper}</p>
-              </div>
-              <div className="progress-track" aria-hidden="true">
-                <div className="progress-fill" style={{ width: `${typeProgressPercent}%` }} />
-              </div>
-            </article>
-            <article className="card progress-panel">
-              <div>
-                <p>Readiness score</p>
-                <strong>{readinessScore}%</strong>
-                <p>{moduleFavorites} favorit di modul ini • {overallFavorites} favorit total</p>
-              </div>
-              <div className="progress-track" aria-hidden="true">
-                <div className="progress-fill warm" style={{ width: `${Math.min(readinessScore, 100)}%` }} />
-              </div>
-            </article>
-          </section>
-
-          <section className="toolbar card">
+          <section className="toolbar card" aria-label="Pencarian dan tindakan soal">
+            <div className="toolbar-filters">
             <input
               ref={searchInputRef}
               value={state.query}
@@ -725,11 +713,10 @@ function App() {
               />
               Hanya favorit
             </label>
+            </div>
+            <div className="toolbar-actions">
             <button className="ghost" onClick={jumpToRandomQuestion}>🎲 Soal acak</button>
             <button className="ghost" onClick={reshuffleQuestions}>🔀 Acak ulang urutan</button>
-            {canResetView && (
-              <button className="ghost" onClick={resetViewState}>🔄 Reset tampilan</button>
-            )}
             {state.selectedType === 'mcq' && (
               <button className="ghost" onClick={jumpToFirstUnanswered}>➡️ Lanjut soal belum dijawab</button>
             )}
@@ -742,23 +729,7 @@ function App() {
             {state.selectedType === 'flashcards' && (
               <button className="ghost" onClick={jumpToFirstUnmasteredFlashcard}>📌 Fokus yang belum dikuasai</button>
             )}
-            <button className="ghost danger" onClick={resetModuleProgress}>♻️ Reset modul aktif</button>
-            <button className="ghost danger" onClick={resetCurrentType}>🗑️ Reset data</button>
-          </section>
-
-          <section className="insight-grid compact-grid">
-            <article className="card progress-panel">
-              <p>
-                Ringkas cepat: {remainingMcqCount} MCQ belum dijawab di modul ini.
-                Gunakan tombol <strong>Review jawaban salah</strong> untuk fokus perbaikan.
-              </p>
-              <p className="subtle-info">{filteredSummary} • Shortcut: ←/→ halaman, 1/2/3 ganti mode, R soal acak, B toggle favorit, Ctrl/Cmd+K fokus cari.</p>
-            </article>
-            <article className="card progress-panel">
-              <p><strong>Rekomendasi belajar berikutnya</strong></p>
-              <p>{nextAction}</p>
-              <p className="subtle-info">Favorit cocok untuk menandai soal jebakan, template jawaban essai, atau flashcard yang ingin direview lagi.</p>
-            </article>
+            </div>
           </section>
 
           {displayItems.length > 0 && (
@@ -1033,8 +1004,21 @@ function App() {
             </button>
           </footer>
 
+          <section className="insight-grid learning-summary" aria-label="Ringkasan belajar">
+            <article className="card progress-panel">
+              <p><strong>Ringkasan sesi</strong></p>
+              <p>{typeSummary.done} dari {typeSummary.total} item selesai. {typeSummary.helper}.</p>
+              <p className="subtle-info">{filteredSummary} • Progres tersimpan otomatis di perangkat ini.</p>
+            </article>
+            <article className="card progress-panel">
+              <p><strong>Rekomendasi belajar berikutnya</strong></p>
+              <p>{nextAction}</p>
+              <p className="subtle-info">{moduleFavorites} favorit di modul ini • {overallFavorites} favorit di seluruh modul.</p>
+            </article>
+          </section>
+
           {showBackToTop && (
-            <button className="back-to-top" onClick={() => contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}>
+            <button className="back-to-top" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
               ↑ Kembali ke atas
             </button>
           )}
